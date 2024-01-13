@@ -2,3 +2,4 @@ logs/
 run.sh
 .gitignore
 __pycache__/
+data/
