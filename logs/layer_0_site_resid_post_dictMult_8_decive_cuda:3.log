@@ -426,3 +426,41 @@ get l0 norm...
 l0 norm: tensor(30.9987, device='cuda:3')
 
 buffer refreshing...
+
+Epoch: 1  Iteration: 4000  Total time: 2367.595072031021 s
+Finished: 9.614 % of Epoch  0
+{'loss': 9.672877311706543, 'l2_loss': 4.762763977050781, 'l1_loss': 4.910113334655762}
+loss: 3.5590, recons_loss: 3.8749, zero_abl_loss: 11.7787
+Reconstruction Score: 96.16%
+get freqs...
+get l0 norm...
+l0 norm: tensor(30.9562, device='cuda:3')
+
+Epoch: 1  Iteration: 4100  Total time: 2389.0174763202667 s
+Finished: 9.854 % of Epoch  0
+{'loss': 9.724903106689453, 'l2_loss': 4.778171539306641, 'l1_loss': 4.946732044219971}
+loss: 3.6024, recons_loss: 3.8945, zero_abl_loss: 11.9250
+Reconstruction Score: 96.49%
+get freqs...
+get l0 norm...
+l0 norm: tensor(30.8325, device='cuda:3')
+
+Epoch: 1  Iteration: 4200  Total time: 2411.488617181778 s
+Finished: 10.095 % of Epoch  0
+{'loss': 9.713662147521973, 'l2_loss': 4.78203010559082, 'l1_loss': 4.931632041931152}
+loss: 3.5775, recons_loss: 3.9056, zero_abl_loss: 12.1256
+Reconstruction Score: 96.16%
+get freqs...
+get l0 norm...
+l0 norm: tensor(30.7677, device='cuda:3')
+
+Epoch: 1  Iteration: 4300  Total time: 2434.3996844291687 s
+Finished: 10.335 % of Epoch  0
+{'loss': 9.656270980834961, 'l2_loss': 4.734029293060303, 'l1_loss': 4.922242164611816}
+loss: 3.5535, recons_loss: 3.8563, zero_abl_loss: 11.8658
+Reconstruction Score: 96.36%
+get freqs...
+get l0 norm...
+l0 norm: tensor(30.7139, device='cuda:3')
+
+buffer refreshing...
