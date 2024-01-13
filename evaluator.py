@@ -11,7 +11,6 @@ class Concept_Evaluator:
     """
     def __init__(self, **kwargs):
         pass
-
     
 class AE_Evaluator(Concept_Evaluator):
     def __init__(self, AE):

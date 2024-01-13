@@ -18,7 +18,7 @@ name_only=0
 init_type='kaiming_uniform' 
 reinit=0
 epoch=5
-device='cuda:3'
+device='cuda:7'
 seed=90
 remove_parallel=1
 

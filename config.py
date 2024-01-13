@@ -33,7 +33,7 @@ cfg = {
         "lr": 1e-3,
         "l1_type": 'default',
         "l2_type": 'KL',
-        
+
         ## train
         "num_batches": None,
         "device": "cuda:0",
@@ -43,6 +43,5 @@ cfg = {
         "reinit": 1,
         'init_type': 'xavier_uniform',
         'remove_parallel': 1,
-        
         
     }
