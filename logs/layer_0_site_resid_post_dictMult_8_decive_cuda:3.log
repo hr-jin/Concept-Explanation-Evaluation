@@ -692,3 +692,16 @@ get l0 norm...
 l0 norm: tensor(30.0622, device='cuda:3')
 
 buffer refreshing...
+
+Epoch: 1  Iteration: 6800  Total time: 3947.8404355049133 s
+Finished: 16.344 % of Epoch  0
+{'loss': 9.681483268737793, 'l2_loss': 4.766839027404785, 'l1_loss': 4.914644241333008}
+loss: 3.5637, recons_loss: 3.8935, zero_abl_loss: 12.1790
+Reconstruction Score: 96.17%
+get freqs...
+get l0 norm...
+l0 norm: tensor(29.8430, device='cuda:3')
+
+Epoch: 1  Iteration: 6900  Total time: 3970.107621908188 s
+Finished: 16.584 % of Epoch  0
+{'loss': 9.690263748168945, 'l2_loss': 4.7828192710876465, 'l1_loss': 4.907444000244141}
