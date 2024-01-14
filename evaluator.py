@@ -15,7 +15,12 @@ class Concept_Evaluator:
 class AE_Evaluator(Concept_Evaluator):
     def __init__(self, AE):
         super().__init__()
-        self.AE = AE
+        if  "pythia" in self.cfg['model_to_interpret']:
+            self.AE = AE
+        elif "gpt" in self.cfg['model_to_interpret']:
+            ...
+        elif "llama" in self.cfg['model_to_interpret']:
+            ...
 
     @staticmethod
     def replacement_hook(mlp_post, hook, encoder):

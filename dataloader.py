@@ -27,15 +27,25 @@ class AE_Dataloader(Dataloader_base):
     """
     def __init__(self, cfg, data, model):
         super(AE_Dataloader, self).__init__()
-        self.buffer = torch.zeros((cfg["buffer_size"], cfg["act_size"]), dtype=torch.bfloat16, requires_grad=False)
-        self.cfg = cfg
-        self.token_pointer = 0
-        self.data = data
-        self.model = model
-        self.refresh()
+        if  "pythia" in cfg['model_to_interpret']:
+            self.buffer = torch.zeros((cfg["buffer_size"], cfg["act_size"]), dtype=torch.bfloat16, requires_grad=False)
+            self.cfg = cfg
+            self.token_pointer = 0
+            self.data = data
+            self.model = model
+            self.refresh()
+        elif "gpt" in cfg['model_to_interpret']:
+            ...
+        elif "llama" in cfg['model_to_interpret']:
+            ...
         
     def __len__(self):
-        return self.cfg['num_batches']
+        if  "pythia" in self.cfg['model_to_interpret']:
+            return self.cfg['num_batches']
+        elif "gpt" in self.cfg['model_to_interpret']:
+            ...
+        elif "llama" in self.cfg['model_to_interpret']:
+            ...
         
     def refresh(self):
         print("\nbuffer refreshing...")
@@ -60,14 +70,25 @@ class AE_Dataloader(Dataloader_base):
 
     @torch.no_grad()
     def next(self):
-        out = self.buffer[self.pointer:self.pointer+self.cfg["batch_size"]]
-        self.pointer += self.cfg["batch_size"]
-        if self.pointer > self.buffer.shape[0] - self.cfg["batch_size"]:
-            self.refresh()
-        return out
+        if  "pythia" in self.cfg['model_to_interpret']:
+            out = self.buffer[self.pointer:self.pointer+self.cfg["batch_size"]]
+            self.pointer += self.cfg["batch_size"]
+            if self.pointer > self.buffer.shape[0] - self.cfg["batch_size"]:
+                self.refresh()
+            return out
+        elif "gpt" in self.cfg['model_to_interpret']:
+            ...
+        elif "llama" in self.cfg['model_to_interpret']:
+            ...
     
     def reinit(self):
         self.token_pointer = 0
         self.refresh()
         
-    
+class TCAV_Dataloader(Dataloader_base):
+    def __init__(self, cfg, data, model):
+        ...
+    def __len__(self):
+        ...
+    def next(self):
+        ...
