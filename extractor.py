@@ -24,6 +24,54 @@ class Concept_Extractor(nn.Module):
         """
         pass
     
+class CAV_Extractor(Concept_Extractor):
+    """
+    Extract concept.
+    """
+    def __init__(self, cfg):
+        super().__init__()
+        if  "pythia" in self.cfg['model_to_interpret']:
+            ...
+        elif "gpt" in self.cfg['model_to_interpret']:
+            ...
+        elif "llama" in self.cfg['model_to_interpret']:
+            ...
+        
+    def forward(self, x):
+        if  "pythia" in self.cfg['model_to_interpret']:
+            ...
+        elif "gpt" in self.cfg['model_to_interpret']:
+            ...
+        elif "llama" in self.cfg['model_to_interpret']:
+            ...
+
+    def save(self, save_dir, ckpt_name=None):
+        ...
+
+    @classmethod
+    def load(cls, save_dir, ckpt_name=None):
+        ...
+    
+    @classmethod
+    def load_from_file(cls, path, device="cuda"):
+        """
+        Loads the saved autoencoder from file.
+        """
+        ...
+
+    
+    def extract_concepts(self, model, dataloader, save_dir):
+        """
+        Return: shaped [N, V], a set of concepts, where N is the number of concepts and V 
+            is the dimension of the concept vector. 
+        """
+        if  "pythia" in self.cfg['model_to_interpret']:
+            ...
+        elif "gpt" in self.cfg['model_to_interpret']:
+            ...
+        elif "llama" in self.cfg['model_to_interpret']:
+            ...
+    
 class AutoEncoder(Concept_Extractor):
     """
     Extract concept.
@@ -192,3 +240,4 @@ class AutoEncoder(Concept_Extractor):
             ...
         elif "llama" in self.cfg['model_to_interpret']:
             ...
+            

@@ -12,6 +12,16 @@ class Concept_Evaluator:
     def __init__(self, **kwargs):
         pass
     
+class TCAV_Evaluator(Concept_Evaluator):
+    def __init__(self, AE):
+        super().__init__()
+        if  "pythia" in self.cfg['model_to_interpret']:
+            ...
+        elif "gpt" in self.cfg['model_to_interpret']:
+            ...
+        elif "llama" in self.cfg['model_to_interpret']:
+            ...
+    
 class AE_Evaluator(Concept_Evaluator):
     def __init__(self, AE):
         super().__init__()
@@ -88,4 +98,5 @@ class AE_Evaluator(Concept_Evaluator):
             l0_norm = sum(l0_norms) / len(l0_norms)
             return l0_norm
     
+
     

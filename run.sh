@@ -18,7 +18,7 @@ name_only=0
 init_type='kaiming_uniform' 
 reinit=0
 epoch=5
-device='cuda:7'
+device='cuda:4'
 seed=90
 remove_parallel=1
 
@@ -30,7 +30,6 @@ echo $dict_mult
 echo $epoch
 echo $reinit
 echo $init_type
-echo $l2_type
 echo $name_only
 
 lr_str=${lr/./-}

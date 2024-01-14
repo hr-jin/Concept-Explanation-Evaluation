@@ -21,6 +21,14 @@ class Dataloader_base():
         """
         pass
     
+class TCAV_Dataloader(Dataloader_base):
+    def __init__(self, cfg, data, model):
+        ...
+    def __len__(self):
+        ...
+    def next(self):
+        ...
+    
 class AE_Dataloader(Dataloader_base):
     """
     This is a dataloader used to generate minibatch data for concept extraction or concept evaluation.
@@ -85,10 +93,3 @@ class AE_Dataloader(Dataloader_base):
         self.token_pointer = 0
         self.refresh()
         
-class TCAV_Dataloader(Dataloader_base):
-    def __init__(self, cfg, data, model):
-        ...
-    def __len__(self):
-        ...
-    def next(self):
-        ...
