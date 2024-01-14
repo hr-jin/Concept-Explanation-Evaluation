@@ -15,11 +15,14 @@ def set_seed(seed):
     torch.cuda.manual_seed(seed)
     np.random.seed(seed)
     
-def load_dataset(data_dir, dataset_name):
-    if not os.path.exists(data_dir + dataset_name):
-        data = datasets.load_dataset("NeelNanda/pile-tokenized-10b", split="train", cache_dir=data_dir)
-        data.save_to_disk(os.path.join(data_dir, dataset_name))
-    data = datasets.load_from_disk(data_dir + dataset_name)
+def load_dataset(data_dir, dataset_name, data_from_hf):
+    if data_from_hf:
+        if not os.path.exists(data_dir + dataset_name):
+            data = datasets.load_dataset("NeelNanda/pile-tokenized-10b", split="train", cache_dir=data_dir)
+            data.save_to_disk(os.path.join(data_dir, dataset_name))
+        data = datasets.load_from_disk(data_dir + dataset_name)
+    else:
+        ...
     return data
 
 

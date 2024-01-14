@@ -17,7 +17,7 @@ def main():
     parser.add_argument("--output_dir", type=str, default="/root/autodl-tmp/haoran/SparseAE-pythia-pile/codebase/data/output")
     parser.add_argument("--subname", type=str, required=True) 
     parser.add_argument("--model_dir", type=str, default="/root/autodl-tmp/haoran/SparseAE-pythia-pile/data/cac/models--EleutherAI--pythia-70m/snapshots/a39f36b100fe8a5377810d56c3f4789b9c53ac42")
-    
+    parser.add_argument("--data_from_hf", type=bool, default=True)
     
     cfg = default_cfg
     cfg, args = arg_parse_update_cfg(cfg, parser)
@@ -31,7 +31,8 @@ def main():
     os.makedirs(save_dir, exist_ok=True)
     
     # define dataloader
-    dataloader = AE_Dataloader(cfg=cfg, data=load_dataset(args.data_dir, args.dataset_name), model=model_to_interpret)
+    loaded_data = load_dataset(args.data_dir, args.dataset_name, args.data_from_hf)
+    dataloader = AE_Dataloader(cfg=cfg, data=loaded_data, model=model_to_interpret)
     
     # define concept extractor
     extractor = AutoEncoder(cfg).to(cfg['device'])
