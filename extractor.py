@@ -78,7 +78,7 @@ class AutoEncoder(Concept_Extractor):
     """
     def __init__(self, cfg):
         super().__init__()
-        if  "pythia" in self.cfg['model_to_interpret']:
+        if  "pythia" in cfg['model_to_interpret']:
             if cfg['site'] == 'mlp_post':
                 d_out = cfg["d_mlp"]
             else:
@@ -97,8 +97,11 @@ class AutoEncoder(Concept_Extractor):
             self.b_dec = nn.Parameter(torch.zeros(d_out, dtype=dtype))
 
             self.W_dec.data[:] = self.W_dec / self.W_dec.norm(dim=-1, keepdim=True)
+            
             self.cfg = cfg
             self.d_hidden = d_hidden
+        
+            
         elif "gpt" in self.cfg['model_to_interpret']:
             ...
         elif "llama" in self.cfg['model_to_interpret']:
@@ -109,7 +112,10 @@ class AutoEncoder(Concept_Extractor):
     def forward(self, x):
         if  "pythia" in self.cfg['model_to_interpret']:
             x_cent = x - self.b_dec
-            acts = F.relu(x_cent @ self.W_enc + self.b_enc)
+            if self.cfg['tied_enc_dec'] == 1:
+                acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
+            else:
+                acts = F.relu(x_cent @ self.W_enc + self.b_enc)
             x_reconstruct = acts @ self.W_dec + self.b_dec
             return x_reconstruct, acts
         elif "gpt" in self.cfg['model_to_interpret']:

@@ -43,5 +43,6 @@ cfg = {
         "reinit": 1,
         'init_type': 'xavier_uniform',
         'remove_parallel': 1,
+        'tied_enc_dec':0,
         
     }

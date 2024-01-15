@@ -21,6 +21,7 @@ epoch=5
 device='cuda:4'
 seed=90
 remove_parallel=1
+tied_enc_dec=1
 
 echo $lr
 echo $l1_coeff
@@ -40,4 +41,4 @@ site_str=${site/./-}
 log_str="logs/layer_"$layer"_site_"$site_str"_dictMult_"$dict_mult"_decive_"$device".log"
 
 echo $log_str
-nohup python -u main.py --lr=$lr --l1_coeff=$l1_coeff --device=$device --batch_size=$batch_size --dict_mult=$dict_mult --subname=$subname --layer=$layer --site=$site --epoch=$epoch --reinit=$reinit --init_type=$init_type --name_only=$name_only --seed=$seed --remove_parallel=$remove_parallel > $log_str 2>&1 &
+nohup python -u main.py --tied_enc_dec=$tied_enc_dec --lr=$lr --l1_coeff=$l1_coeff --device=$device --batch_size=$batch_size --dict_mult=$dict_mult --subname=$subname --layer=$layer --site=$site --epoch=$epoch --reinit=$reinit --init_type=$init_type --name_only=$name_only --seed=$seed --remove_parallel=$remove_parallel > $log_str 2>&1 &
