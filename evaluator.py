@@ -13,23 +13,86 @@ class Concept_Evaluator:
         pass
     
 class TCAV_Evaluator(Concept_Evaluator):
-    def __init__(self, AE):
+    def __init__(self, cfg, model, concept_cavs, logit_token_idx=7423):
         super().__init__()
-        if  "pythia" in self.cfg['model_to_interpret']:
+        self.cfg = cfg
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
-            ...
+        elif "llama" in self.cfg['model_to_interpret'].lower():
+            self.cfg = cfg
+            self.model           = model
+            self.tokenizer       = model.tokenizer
+            self.logit_token_idx = logit_token_idx
+            self.concept_cavs    = concept_cavs       
+            
+    def get_logits_grad(self, sample):
+        self.model.zero_grad()
+        inputs = self.tokenizer(sample, max_length=32, truncation=True, padding=True,return_tensors="pt")
+        inputs = inputs.to('cpu')
+
+        grads = []
+        for i in range(inputs['input_ids'].shape[0]):
+            outputs, cache = run_with_cache_onesentence(inputs['input_ids'][i], 
+                                                        model=self.model,
+                                                        names_filter=[self.cfg['act_name']], 
+                                                        seq_len=inputs['attention_mask'][i].sum(),
+                                                       logit_token_idx=self.logit_token_idx)
+            grads.append(cache[self.cfg['act_name']+'_grad'].cpu().numpy())
+        
+        grad = np.array(grads)[:,0,:,:]
+        grad = grad[np.arange(grad.shape[0]),(inputs['attention_mask'].sum(-1)-1),:]
+
+        return outputs, grad, cache
+    
+    def get_tcav_score(self, test_examples):
+        
+        print('calculating logits and grads...')
+        _, grad, _ = self.get_logits_grad(test_examples)
+            
+        sensitivities = [np.dot(grad, cav) for cav in self.concept_cavs]
+
+        sensitivities = np.array(sensitivities).transpose()
+        tcavs = []            
+        positive_effects = []
+        negative_effects = []
+        for i in range(1):
+            positive_score = 0
+            negative_score = 0
+            count = 0
+            for s in sensitivities[:, i]:
+                if s > 0:
+                    count += 1
+                    positive_score += s
+                else:
+                    negative_score += s
+            tcavs.append(count / len(test_examples))
+            positive_score = positive_score / count if count != 0 else 0
+            negative_score = negative_score / (len(test_examples) - count) if count != len(test_examples) else 0
+            positive_effects.append(positive_score)
+            negative_effects.append(negative_score)
+
+        print('TCAV count score for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(tcavs), np.std(tcavs)))
+        print('TCAV positive effects for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(positive_effects),
+                                                                                    np.std(positive_effects)))
+        print('TCAV negative effects for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(negative_effects),
+                                                                                    np.std(negative_effects)))
+
+        positive_mean_effects = np.mean(positive_effects)
+        negative_mean_effects = np.mean(negative_effects)
+        tcavs_score = np.mean(tcavs)
+
+        return tcavs_score, positive_mean_effects, negative_mean_effects
     
 class AE_Evaluator(Concept_Evaluator):
     def __init__(self, AE):
         super().__init__()
-        if  "pythia" in self.cfg['model_to_interpret']:
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             self.AE = AE
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
 
     @staticmethod

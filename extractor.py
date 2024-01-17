@@ -8,6 +8,11 @@ from utils import *
 import time
 from dataloader import *
 from evaluator import *
+from transformers import LlamaForCausalLM, LlamaTokenizer
+import os
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.model_selection import train_test_split
 
 class Concept_Extractor(nn.Module):
     """
@@ -30,19 +35,19 @@ class CAV_Extractor(Concept_Extractor):
     """
     def __init__(self, cfg):
         super().__init__()
-        if  "pythia" in self.cfg['model_to_interpret']:
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
         
     def forward(self, x):
-        if  "pythia" in self.cfg['model_to_interpret']:
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
 
     def save(self, save_dir, ckpt_name=None):
@@ -65,11 +70,11 @@ class CAV_Extractor(Concept_Extractor):
         Return: shaped [N, V], a set of concepts, where N is the number of concepts and V 
             is the dimension of the concept vector. 
         """
-        if  "pythia" in self.cfg['model_to_interpret']:
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
     
 class AutoEncoder(Concept_Extractor):
@@ -78,7 +83,7 @@ class AutoEncoder(Concept_Extractor):
     """
     def __init__(self, cfg):
         super().__init__()
-        if  "pythia" in cfg['model_to_interpret']:
+        if  "pythia" in cfg['model_to_interpret'].lower():
             if cfg['site'] == 'mlp_post':
                 d_out = cfg["d_mlp"]
             else:
@@ -102,15 +107,15 @@ class AutoEncoder(Concept_Extractor):
             self.d_hidden = d_hidden
         
             
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
         
         
         
     def forward(self, x):
-        if  "pythia" in self.cfg['model_to_interpret']:
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             x_cent = x - self.b_dec
             if self.cfg['tied_enc_dec'] == 1:
                 acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
@@ -118,9 +123,9 @@ class AutoEncoder(Concept_Extractor):
                 acts = F.relu(x_cent @ self.W_enc + self.b_enc)
             x_reconstruct = acts @ self.W_dec + self.b_dec
             return x_reconstruct, acts
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
 
     @torch.no_grad()
@@ -196,7 +201,7 @@ class AutoEncoder(Concept_Extractor):
         Return: shaped [N, V], a set of concepts, where N is the number of concepts and V 
             is the dimension of the concept vector. 
         """
-        if  "pythia" in self.cfg['model_to_interpret']:
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             optimizer = torch.optim.Adam(self.parameters(), lr=self.cfg["lr"], betas=(self.cfg["beta1"], self.cfg["beta2"]))
             best_reconstruct = 0
             time_start=time.time()
@@ -242,8 +247,75 @@ class AutoEncoder(Concept_Extractor):
                     del loss, acti_reconstruct, mid_acts, l2_loss, l1_loss
                 self.save(save_dir, ckpt_name="Iteration" + str(iter) + "_Epoch" + str(epoch+1))
             return self.W_dec.detach()
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
             
+class TCAV_Extractor(Concept_Extractor):
+    def __init__(self, cfg, model, token_idx = -1):
+        super().__init__()
+        self.cfg = cfg
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
+            ...
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
+            ...
+        elif "llama" in self.cfg['model_to_interpret'].lower():
+            self.model = model
+            self.tokenizer = model.tokenizer
+            self.cavs      = []
+            self.token_idx = token_idx
+            self.act_name = cfg['act_name']
+    
+    def get_reps(self, concept_examples):
+        with torch.no_grad():
+            inputs = self.tokenizer(concept_examples, max_length=256, truncation=True, padding=True,return_tensors="pt")
+            inputs = inputs.to('cpu')
+            _ = self.model(inputs['input_ids'])
+            _, cache = self.model.run_with_cache(inputs['input_ids'], names_filter=[self.act_name])
+            concept_repres = cache[self.act_name].cpu().detach().numpy()
+            concept_repres = concept_repres[np.arange(concept_repres.shape[0]),(inputs['attention_mask'].sum(-1)-1),:]
+        return concept_repres
+   
+
+    def extract_concepts(self, dataloader, delta=None, num_runs=1):
+        
+        positive_concept_examples, negative_concept_examples = dataloader.next()
+        reps = self.get_reps(positive_concept_examples + negative_concept_examples)
+        positive_embedding = reps[:reps.shape[0]//2]
+        negative_embedding = reps[reps.shape[0]//2:]
+
+        positive_labels = np.ones((len(positive_concept_examples), ))  
+        negative_labels = np.zeros((len(negative_concept_examples),))  
+
+        X = np.vstack((positive_embedding, negative_embedding))
+        Y = np.concatenate((positive_labels, negative_labels))
+
+        cavs = []
+        accuracy_train_list = []
+        accuracy_test_list = []
+
+        for i in range(num_runs):
+            x_train, x_test, y_train, y_test = train_test_split(X, Y, random_state=i)
+            if delta is None:
+                log_reg = LogisticRegression(solver='saga', max_iter=10000)
+            else:
+                log_reg = LogisticRegression(penalty='l1', C=delta, solver='saga', max_iter=10000)
+            log_reg.fit(x_train, y_train)
+
+            predictions_test = log_reg.predict(x_test)
+            predictions_train = log_reg.predict(x_train)
+            accuracy_test = accuracy_score(y_test, predictions_test)
+            accuracy_train = accuracy_score(y_train, predictions_train)
+            accuracy_train_list.append(accuracy_train)
+            accuracy_test_list.append(accuracy_test)
+            cav = log_reg.coef_[0]
+            cavs.append(cav)
+
+        acc = np.mean(accuracy_test_list)
+        self.cavs = cavs
+        print('Acc in training set:{:.2f}, in test set:{:.2f}'.format(np.mean(accuracy_train_list), np.mean(accuracy_test_list)))
+        return cavs, acc
+    
+    def save_cav(self, path):
+        torch.save(self.cavs, path) 

@@ -22,7 +22,7 @@ def main():
     cfg = default_cfg
     cfg, args = arg_parse_update_cfg(cfg, parser)
 
-    model_to_interpret = HookedTransformer.from_pretrained(args.model_dir).to(args.device) # to(DTYPES["fp32"])
+    model_to_interpret = load_model(args)
     
     cfg = process_cfg(cfg, model_to_interpret)
     

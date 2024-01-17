@@ -22,12 +22,20 @@ class Dataloader_base():
         pass
     
 class TCAV_Dataloader(Dataloader_base):
-    def __init__(self, cfg, data, model):
-        ...
+    def __init__(self, cfg, positive_examples, negative_examples):
+        super(TCAV_Dataloader, self).__init__()
+        self.cfg = cfg
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
+            ...
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
+            ...
+        elif "llama" in self.cfg['model_to_interpret'].lower():
+            self.positive_examples = positive_examples
+            self.negative_examples = negative_examples
     def __len__(self):
-        ...
+        return 1
     def next(self):
-        ...
+        return self.positive_examples, self.negative_examples
     
 class AE_Dataloader(Dataloader_base):
     """
@@ -35,24 +43,25 @@ class AE_Dataloader(Dataloader_base):
     """
     def __init__(self, cfg, data, model):
         super(AE_Dataloader, self).__init__()
-        if  "pythia" in cfg['model_to_interpret']:
+        self.cfg = cfg
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             self.buffer = torch.zeros((cfg["buffer_size"], cfg["act_size"]), dtype=torch.bfloat16, requires_grad=False)
             self.cfg = cfg
             self.token_pointer = 0
             self.data = data
             self.model = model
             self.refresh()
-        elif "gpt" in cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
         
     def __len__(self):
-        if  "pythia" in self.cfg['model_to_interpret']:
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             return self.cfg['num_batches']
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
         
     def refresh(self):
@@ -78,15 +87,15 @@ class AE_Dataloader(Dataloader_base):
 
     @torch.no_grad()
     def next(self):
-        if  "pythia" in self.cfg['model_to_interpret']:
+        if  "pythia" in self.cfg['model_to_interpret'].lower():
             out = self.buffer[self.pointer:self.pointer+self.cfg["batch_size"]]
             self.pointer += self.cfg["batch_size"]
             if self.pointer > self.buffer.shape[0] - self.cfg["batch_size"]:
                 self.refresh()
             return out
-        elif "gpt" in self.cfg['model_to_interpret']:
+        elif "gpt" in self.cfg['model_to_interpret'].lower():
             ...
-        elif "llama" in self.cfg['model_to_interpret']:
+        elif "llama" in self.cfg['model_to_interpret'].lower():
             ...
     
     def reinit(self):

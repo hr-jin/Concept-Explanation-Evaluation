@@ -39,6 +39,7 @@ cfg = {
         "device": "cuda:0",
         "batch_size": 8192,
         "l1_coeff": 1.0,
+        "n_devices": 1,
         "epoch": 1,
         "reinit": 1,
         'init_type': 'xavier_uniform',
