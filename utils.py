@@ -10,8 +10,6 @@ from transformers import LlamaConfig, LlamaForCausalLM, AutoTokenizer
 from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 from transformer_lens import HookedTransformer
 
-DTYPES = {"fp32": torch.float32, "fp16": torch.float16, "bf16": torch.bfloat16}
-
 def set_seed(seed):
     random.seed(seed)
     torch.manual_seed(seed)
@@ -134,7 +132,8 @@ def post_init_cfg(cfg):
 
 def arg_parse_update_cfg(default_cfg, parser):
     """
-    Helper function to take in a dictionary of arguments, convert these to command line arguments, look at what was passed in, and return an updated dictionary.
+    Helper function to take in a dictionary of arguments, 
+        convert these to command line arguments, look at what was passed in, and return an updated dictionary.
     """
     cfg = dict(default_cfg)
     for key, value in default_cfg.items():
