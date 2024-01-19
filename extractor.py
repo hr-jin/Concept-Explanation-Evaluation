@@ -8,10 +8,9 @@ from utils import *
 import time
 from dataloader import *
 from evaluator import *
-from transformers import LlamaForCausalLM, LlamaTokenizer
 import os
 from sklearn.metrics import accuracy_score
-from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
 class Concept_Extractor(nn.Module):
@@ -29,105 +28,41 @@ class Concept_Extractor(nn.Module):
         """
         pass
     
-class CAV_Extractor(Concept_Extractor):
-    """
-    Extract concept.
-    """
-    def __init__(self, cfg):
-        super().__init__()
-        if  "pythia" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "gpt" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "llama" in self.cfg['model_to_interpret'].lower():
-            ...
-        
-    def forward(self, x):
-        if  "pythia" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "gpt" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "llama" in self.cfg['model_to_interpret'].lower():
-            ...
-
-    def save(self, save_dir, ckpt_name=None):
-        ...
-
-    @classmethod
-    def load(cls, save_dir, ckpt_name=None):
-        ...
-    
-    @classmethod
-    def load_from_file(cls, path, device="cuda"):
-        """
-        Loads the saved autoencoder from file.
-        """
-        ...
-
-    
-    def extract_concepts(self, model, dataloader, save_dir):
-        """
-        Return: shaped [N, V], a set of concepts, where N is the number of concepts and V 
-            is the dimension of the concept vector. 
-        """
-        if  "pythia" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "gpt" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "llama" in self.cfg['model_to_interpret'].lower():
-            ...
-    
 class AutoEncoder(Concept_Extractor):
     """
-    Extract concept.
+    An unsupervised learning method that hopes to learn sparsely activated concepts through AutoEncoder
     """
     def __init__(self, cfg):
         super().__init__()
-        if  "pythia" in cfg['model_to_interpret'].lower():
-            if cfg['site'] == 'mlp_post':
+        if cfg['site'] == 'mlp_post':
                 d_out = cfg["d_mlp"]
-            else:
-                d_out = cfg["d_model"]
-            d_hidden = cfg["dict_size"]
-            dtype = torch.float32
-            
-            if cfg['init_type'] == 'xavier_uniform':
-                self.W_enc = nn.Parameter(torch.nn.init.xavier_uniform_(torch.empty(d_out, d_hidden, dtype=dtype)))
-                self.W_dec = nn.Parameter(torch.nn.init.xavier_uniform_(torch.empty(d_hidden, d_out, dtype=dtype)))
-            if cfg['init_type'] == 'kaiming_uniform':
-                self.W_enc = nn.Parameter(torch.nn.init.kaiming_uniform_(torch.empty(d_out, d_hidden, dtype=dtype)))
-                self.W_dec = nn.Parameter(torch.nn.init.kaiming_uniform_(torch.empty(d_hidden, d_out, dtype=dtype)))
-                
-            self.b_enc = nn.Parameter(torch.zeros(d_hidden, dtype=dtype))
-            self.b_dec = nn.Parameter(torch.zeros(d_out, dtype=dtype))
-
-            self.W_dec.data[:] = self.W_dec / self.W_dec.norm(dim=-1, keepdim=True)
-            
-            self.cfg = cfg
-            self.d_hidden = d_hidden
+        else:
+            d_out = cfg["d_model"]
+        d_hidden = cfg["dict_size"]
+        dtype = torch.float32
         
-            
-        elif "gpt" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "llama" in self.cfg['model_to_interpret'].lower():
-            ...
+        if cfg['init_type'] == 'xavier_uniform':
+            self.W_enc = nn.Parameter(torch.nn.init.xavier_uniform_(torch.empty(d_out, d_hidden, dtype=dtype)))
+            self.W_dec = nn.Parameter(torch.nn.init.xavier_uniform_(torch.empty(d_hidden, d_out, dtype=dtype)))
+        if cfg['init_type'] == 'kaiming_uniform':
+            self.W_enc = nn.Parameter(torch.nn.init.kaiming_uniform_(torch.empty(d_out, d_hidden, dtype=dtype)))
+            self.W_dec = nn.Parameter(torch.nn.init.kaiming_uniform_(torch.empty(d_hidden, d_out, dtype=dtype)))
+        self.b_enc = nn.Parameter(torch.zeros(d_hidden, dtype=dtype))
+        self.b_dec = nn.Parameter(torch.zeros(d_out, dtype=dtype))
         
-        
+        self.W_dec.data[:] = self.W_dec / self.W_dec.norm(dim=-1, keepdim=True)
+        self.cfg = cfg
+        self.d_hidden = d_hidden
         
     def forward(self, x):
-        if  "pythia" in self.cfg['model_to_interpret'].lower():
-            x_cent = x - self.b_dec
-            if self.cfg['tied_enc_dec'] == 1:
-                acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
-            else:
-                acts = F.relu(x_cent @ self.W_enc + self.b_enc)
-            x_reconstruct = acts @ self.W_dec + self.b_dec
-            return x_reconstruct, acts
-        elif "gpt" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "llama" in self.cfg['model_to_interpret'].lower():
-            ...
-
+        x_cent = x - self.b_dec
+        if self.cfg['tied_enc_dec'] == 1:
+            acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
+        else:
+            acts = F.relu(x_cent @ self.W_enc + self.b_enc)
+        x_reconstruct = acts @ self.W_dec + self.b_dec
+        return x_reconstruct, acts
+    
     @torch.no_grad()
     def re_init(self, indices):
         if self.cfg['init_type'] == 'xavier_uniform':
@@ -177,13 +112,6 @@ class AutoEncoder(Concept_Extractor):
         return self
     
     @classmethod
-    def load_cfg_only(cls, save_dir):
-        cfg = (json.load(open(os.path.join(save_dir, "cfg.json"), "r")))
-        pprint.pprint(cfg)
-        self = cls(cfg=cfg)
-        return self
-    
-    @classmethod
     def load_from_file(cls, path, device="cuda"):
         """
         Loads the saved autoencoder from file.
@@ -195,83 +123,71 @@ class AutoEncoder(Concept_Extractor):
         self.load_state_dict(state_dict)
         return self
 
-    
     def extract_concepts(self, model, dataloader, save_dir):
         """
-        Return: shaped [N, V], a set of concepts, where N is the number of concepts and V 
-            is the dimension of the concept vector. 
+        Returns:
+            A dictionary with the shape [d_hidden, d_out], each line contains a concept
         """
-        if  "pythia" in self.cfg['model_to_interpret'].lower():
-            optimizer = torch.optim.Adam(self.parameters(), lr=self.cfg["lr"], betas=(self.cfg["beta1"], self.cfg["beta2"]))
-            best_reconstruct = 0
-            time_start=time.time()
-            for epoch in range(self.cfg['epoch']):
-                print('epoch:', epoch)
-                if epoch > 0:
-                    dataloader.reinit()
-                for iter in range(dataloader.__len__()): 
-                    activations = dataloader.next()
-                    activations = activations.to(self.cfg["device"])
-                    acti_reconstruct, mid_acts = self.forward(activations)
-                    l2_loss =  (acti_reconstruct.float() - activations.float()).pow(2).sum(-1).mean()
-                    l1_loss = self.cfg['l1_coeff'] * (mid_acts.float().abs().sum(-1).mean())
-                    loss = l2_loss + l1_loss
-                    loss.backward()
-                    if self.cfg['remove_parallel']:
-                        self.remove_parallel_component_of_grads()
-                    optimizer.step()
-                    optimizer.zero_grad()
-                    loss_dict = {"loss": loss.item(), "l2_loss": l2_loss.item(), "l1_loss": l1_loss.item()}
-                    
-                    if (iter + 1) % 100 == 0:
-                        time_end=time.time()
-                        print('\nEpoch:', (epoch+1)," Iteration:", iter+1, " Total time:", time_end-time_start, "s")
-                        print(f"Finished: {(100 * (iter+1) / self.cfg['num_batches']):.3f}", "% of Epoch ", epoch)
-                        print(loss_dict)
-                        x = AE_Evaluator.get_recons_loss(self, dataloader, model, self.cfg, num_batches=5)
-                        l0 = AE_Evaluator.get_l0_norm(self, dataloader, self.cfg, num_batches=5)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.cfg["lr"], betas=(self.cfg["beta1"], self.cfg["beta2"]))
+        best_reconstruct = 0
+        time_start=time.time()
+        for epoch in range(self.cfg['epoch']):
+            print('epoch:', epoch)
+            print('total iterations:', dataloader.__len__())
+            if epoch > 0:
+                dataloader.reinit()
+            for iter in range(dataloader.__len__()): 
+                activations = dataloader.next()
+                activations = activations.to(self.cfg["device"])
+                acti_reconstruct, mid_acts = self.forward(activations)
+                l2_loss =  (acti_reconstruct.float() - activations.float()).pow(2).sum(-1).mean()
+                l1_loss = self.cfg['l1_coeff'] * (mid_acts.float().abs().sum(-1).mean())
+                loss = l2_loss + l1_loss
+                loss.backward()
+                if self.cfg['remove_parallel']:
+                    self.remove_parallel_component_of_grads()
+                optimizer.step()
+                optimizer.zero_grad()
+                loss_dict = {"loss": loss.item(), "l2_loss": l2_loss.item(), "l1_loss": l1_loss.item()}
+                
+                if (iter + 1) % self.cfg['val_freq'] == 0:
+                    time_end=time.time()
+                    print('\nEpoch:', (epoch+1)," Iteration:", iter+1, " Total time:", time_end-time_start, "s")
+                    print(f"Finished: {(100 * (iter+1) / self.cfg['num_batches']):.3f}", "% of Epoch ", epoch)
+                    print(loss_dict)
+                    x = AE_Evaluator.get_recons_loss(self, dataloader, model, self.cfg, num_batches=5)
+                    l0 = AE_Evaluator.get_l0_norm(self, dataloader, self.cfg, num_batches=5)
+                    print("l0 norm:", l0)
+                    if x[0] > best_reconstruct:
+                        best_reconstruct = x[0]
+                        self.save(save_dir, ckpt_name="best_reconstruct")
                         
-                        print("l0 norm:", l0)
-                        
-                        if x[0] > best_reconstruct:
-                            best_reconstruct = x[0]
-                            self.save(save_dir, ckpt_name="best_reconstruct")
-                            
-                    if (iter + 1) % 10000 == 0:
-                        print('saved at:', save_dir)
-                        self.save(save_dir, ckpt_name="Iteration" + str(iter+1) + "_Epoch" + str(epoch+1))
-                        freqs, num_dead = AE_Evaluator.get_freqs(self, dataloader, self.cfg, num_batches=25)
-                        if self.cfg['reinit'] == 1:
-                            to_be_reset = (freqs<10**(-5.5))
-                            self.re_init(self, to_be_reset)
-                    del loss, acti_reconstruct, mid_acts, l2_loss, l1_loss
-                self.save(save_dir, ckpt_name="Iteration" + str(iter) + "_Epoch" + str(epoch+1))
-            return self.W_dec.detach()
-        elif "gpt" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "llama" in self.cfg['model_to_interpret'].lower():
-            ...
+                if (iter + 1) % 10000 == 0:
+                    print('saved at:', save_dir)
+                    self.save(save_dir, ckpt_name="Iteration" + str(iter+1) + "_Epoch" + str(epoch+1))
+                    freqs, num_dead = AE_Evaluator.get_freqs(self, dataloader, self.cfg, num_batches=25)
+                    if self.cfg['reinit'] == 1:
+                        to_be_reset = (freqs<10**(-5.5))
+                        self.re_init(self, to_be_reset)
+                del loss, acti_reconstruct, mid_acts, l2_loss, l1_loss
+            self.save(save_dir, ckpt_name="Iteration" + str(iter) + "_Epoch" + str(epoch+1))
+        return self.W_dec.clone().detach()
             
 class TCAV_Extractor(Concept_Extractor):
+    
     def __init__(self, cfg, model, token_idx = -1):
         super().__init__()
         self.cfg = cfg
-        if  "pythia" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "gpt" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "llama" in self.cfg['model_to_interpret'].lower():
-            self.model = model
-            self.tokenizer = model.tokenizer
-            self.cavs      = []
-            self.token_idx = token_idx
-            self.act_name = cfg['act_name']
+        self.model = model
+        self.tokenizer = model.tokenizer
+        self.cavs      = []
+        self.token_idx = token_idx
+        self.act_name = cfg['act_name']
     
     def get_reps(self, concept_examples):
         with torch.no_grad():
-            inputs = self.tokenizer(concept_examples, max_length=256, truncation=True, padding=True,return_tensors="pt")
+            inputs = self.tokenizer(concept_examples, max_length=128, truncation=True, padding=True,return_tensors="pt")
             inputs = inputs.to('cpu')
-            _ = self.model(inputs['input_ids'])
             _, cache = self.model.run_with_cache(inputs['input_ids'], names_filter=[self.act_name])
             concept_repres = cache[self.act_name].cpu().detach().numpy()
             concept_repres = concept_repres[np.arange(concept_repres.shape[0]),(inputs['attention_mask'].sum(-1)-1),:]
@@ -279,18 +195,17 @@ class TCAV_Extractor(Concept_Extractor):
    
 
     def extract_concepts(self, dataloader, delta=None, num_runs=1):
-        
         positive_concept_examples, negative_concept_examples = dataloader.next()
         reps = self.get_reps(positive_concept_examples + negative_concept_examples)
+        
         positive_embedding = reps[:reps.shape[0]//2]
         negative_embedding = reps[reps.shape[0]//2:]
-
+        
         positive_labels = np.ones((len(positive_concept_examples), ))  
         negative_labels = np.zeros((len(negative_concept_examples),))  
-
+        
         X = np.vstack((positive_embedding, negative_embedding))
         Y = np.concatenate((positive_labels, negative_labels))
-
         cavs = []
         accuracy_train_list = []
         accuracy_test_list = []
@@ -302,7 +217,7 @@ class TCAV_Extractor(Concept_Extractor):
             else:
                 log_reg = LogisticRegression(penalty='l1', C=delta, solver='saga', max_iter=10000)
             log_reg.fit(x_train, y_train)
-
+            
             predictions_test = log_reg.predict(x_test)
             predictions_train = log_reg.predict(x_train)
             accuracy_test = accuracy_score(y_test, predictions_test)

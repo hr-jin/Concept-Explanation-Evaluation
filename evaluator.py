@@ -16,22 +16,15 @@ class TCAV_Evaluator(Concept_Evaluator):
     def __init__(self, cfg, model, concept_cavs, logit_token_idx=7423):
         super().__init__()
         self.cfg = cfg
-        if  "pythia" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "gpt" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "llama" in self.cfg['model_to_interpret'].lower():
-            self.cfg = cfg
-            self.model           = model
-            self.tokenizer       = model.tokenizer
-            self.logit_token_idx = logit_token_idx
-            self.concept_cavs    = concept_cavs       
+        self.model = model
+        self.tokenizer = model.tokenizer
+        self.logit_token_idx = logit_token_idx
+        self.concept_cavs = concept_cavs       
             
     def get_logits_grad(self, sample):
         self.model.zero_grad()
-        inputs = self.tokenizer(sample, max_length=32, truncation=True, padding=True,return_tensors="pt")
+        inputs = self.tokenizer(sample, max_length=128, truncation=True, padding=True,return_tensors="pt")
         inputs = inputs.to('cpu')
-
         grads = []
         for i in range(inputs['input_ids'].shape[0]):
             outputs, cache = run_with_cache_onesentence(inputs['input_ids'][i], 
@@ -40,19 +33,14 @@ class TCAV_Evaluator(Concept_Evaluator):
                                                         seq_len=inputs['attention_mask'][i].sum(),
                                                        logit_token_idx=self.logit_token_idx)
             grads.append(cache[self.cfg['act_name']+'_grad'].cpu().numpy())
-        
         grad = np.array(grads)[:,0,:,:]
         grad = grad[np.arange(grad.shape[0]),(inputs['attention_mask'].sum(-1)-1),:]
-
         return outputs, grad, cache
     
     def get_tcav_score(self, test_examples):
-        
         print('calculating logits and grads...')
         _, grad, _ = self.get_logits_grad(test_examples)
-            
         sensitivities = [np.dot(grad, cav) for cav in self.concept_cavs]
-
         sensitivities = np.array(sensitivities).transpose()
         tcavs = []            
         positive_effects = []
@@ -73,6 +61,7 @@ class TCAV_Evaluator(Concept_Evaluator):
             positive_effects.append(positive_score)
             negative_effects.append(negative_score)
 
+        print(f'Evaluate on {self.tokenizer.decode(self.logit_token_idx)} as the next token.')
         print('TCAV count score for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(tcavs), np.std(tcavs)))
         print('TCAV positive effects for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(positive_effects),
                                                                                     np.std(positive_effects)))
@@ -82,18 +71,11 @@ class TCAV_Evaluator(Concept_Evaluator):
         positive_mean_effects = np.mean(positive_effects)
         negative_mean_effects = np.mean(negative_effects)
         tcavs_score = np.mean(tcavs)
-
         return tcavs_score, positive_mean_effects, negative_mean_effects
     
 class AE_Evaluator(Concept_Evaluator):
-    def __init__(self, AE):
+    def __init__(self):
         super().__init__()
-        if  "pythia" in self.cfg['model_to_interpret'].lower():
-            self.AE = AE
-        elif "gpt" in self.cfg['model_to_interpret'].lower():
-            ...
-        elif "llama" in self.cfg['model_to_interpret'].lower():
-            ...
 
     @staticmethod
     def replacement_hook(mlp_post, hook, encoder):
@@ -114,9 +96,7 @@ class AE_Evaluator(Concept_Evaluator):
             for i in range(num_batches):
                 mlp_acts = dataloader.buffer[torch.randperm(dataloader.buffer.shape[0])[:cfg["batch_size"]]]
                 mlp_acts = mlp_acts.to(cfg['device'])
-
                 _, acts = AE(mlp_acts)
-
                 act_freq_scores += (acts > 0).sum(0)
                 total+=acts.shape[0]
             act_freq_scores /= total
@@ -128,8 +108,7 @@ class AE_Evaluator(Concept_Evaluator):
         with torch.no_grad():
             loss_list = []
             for i in range(num_batches):
-                tokens = dataloader.data[torch.randperm(len(dataloader.data))[:cfg["model_batch_size"]]]['tokens']
-                tokens = torch.tensor(tokens)
+                tokens = dataloader.get_random_batch()
                 tokens = tokens[:, :cfg['seq_len']]
                 tokens[:, 0] = model.tokenizer.bos_token_id
                 loss = model(tokens, return_type="loss")
@@ -138,7 +117,6 @@ class AE_Evaluator(Concept_Evaluator):
                 loss_list.append((loss, recons_loss, zero_abl_loss))
             losses = torch.tensor(loss_list)
             loss, recons_loss, zero_abl_loss = losses.mean(0).tolist()
-
             print(f"loss: {loss:.4f}, recons_loss: {recons_loss:.4f}, zero_abl_loss: {zero_abl_loss:.4f}")
             score = ((zero_abl_loss - recons_loss)/(zero_abl_loss - loss))
             print(f"Reconstruction Score: {score:.2%}")
@@ -153,7 +131,6 @@ class AE_Evaluator(Concept_Evaluator):
             for i in range(num_batches):
                 mlp_acts = dataloader.buffer[torch.randperm(dataloader.buffer.shape[0])[:cfg["batch_size"]]]
                 mlp_acts = mlp_acts.to(cfg['device'])
-
                 _, acts = AE(mlp_acts)
                 acts = acts.reshape(-1, num_feature)
                 l0_norm = torch.linalg.norm(acts, ord=0, dim=-1).sum() / acts.shape[0]

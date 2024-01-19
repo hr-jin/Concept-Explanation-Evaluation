@@ -1,6 +1,5 @@
 import os
 import argparse
-from transformer_lens import HookedTransformer
 from utils import *
 from extractor import *
 from dataloader import *
@@ -8,26 +7,15 @@ from config import cfg as default_cfg
 import pandas as pd
 
 def main():
-    """
-    Here we take the process of concept extraction by autoencoder as an example.
-    """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_to_interpret", type=str, default="Llama-2-7b-chat-hf")
-    parser.add_argument("--data_dir", type=str, default="/root/autodl-tmp/haoran/SparseAE-pythia-pile/data/") 
-    parser.add_argument("--dataset_name", type=str, default="")
-    parser.add_argument("--output_dir", type=str, default="/root/autodl-tmp/haoran/SparseAE-pythia-pile/codebase/data/output")
-    parser.add_argument("--subname", type=str, required=True) 
-    parser.add_argument("--model_dir", type=str, default='/root/autodl-tmp/haoran/SparseAE-pythia-pile/data/Llama-2-7b-chat-hf')
-    parser.add_argument("--data_from_hf", type=bool, default=True)
     
-    cfg = default_cfg
-    cfg, args = arg_parse_update_cfg(cfg, parser)
+    cfg, args = arg_parse_update_cfg(default_cfg, parser)
 
     model_to_interpret = load_model(args, device_list=[1,2,3,5,6,7])
     
     cfg = process_cfg(cfg, model_to_interpret)
     
-    save_path = f"{args.subname}_model_{args.model_to_interpret}_layer_{cfg['layer']}_dictSize_{cfg['dict_size']}_site_{cfg['site']}"
+    save_path = f"model_{args.model_to_interpret}_layer_{cfg['layer']}_dictSize_{cfg['dict_size']}_site_{cfg['site']}"
     save_dir = os.path.join(args.output_dir, save_path)
     os.makedirs(save_dir, exist_ok=True)
     
@@ -54,8 +42,8 @@ def main():
     
     # print('cavs:', cavs)
     
-    evaluator = TCAV_Evaluator(cfg, model_to_interpret, cavs, logit_token_idx=7423)
-    tcavs_score, positive_mean_effects, negative_mean_effects = evaluator.get_tcav_score(random_input_examples[-100:])
+    evaluator = TCAV_Evaluator(cfg, model_to_interpret, cavs, logit_token_idx=7420) # 7420(low) 7423(high)
+    tcavs_score, positive_mean_effects, negative_mean_effects = evaluator.get_tcav_score(random_input_examples)
     
 if __name__ == "__main__":
     main()

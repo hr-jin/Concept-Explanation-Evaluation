@@ -69,6 +69,7 @@ def load_model(args, device_list=None):
             device_list = [('cuda:' + str(i)) for i in range(start_idx, start_idx + n_devices)]
         print(device_list)
         
+        print(model_config)
         device_map['model.embed_tokens.weight'] = device_list[0]
         device_map['model.norm.weight'] = device_list[-1]
         device_map['lm_head.weight'] = device_list[-1]
@@ -111,10 +112,10 @@ def load_model(args, device_list=None):
     
 def load_dataset(data_dir, dataset_name, data_from_hf):
     if data_from_hf:
-        if not os.path.exists(data_dir + dataset_name):
-            data = datasets.load_dataset("NeelNanda/pile-tokenized-10b", split="train", cache_dir=data_dir)
-            data.save_to_disk(os.path.join(data_dir, dataset_name))
-        data = datasets.load_from_disk(data_dir + dataset_name)
+        if not os.path.exists(data_dir + dataset_name + '.hf'):
+            data = datasets.load_dataset(dataset_name, split="train", cache_dir=data_dir)
+            data.save_to_disk(os.path.join(data_dir, dataset_name + '.hf'))
+        data = datasets.load_from_disk(data_dir + dataset_name + '.hf')
     else:
         ...
     return data
@@ -124,7 +125,10 @@ def post_init_cfg(cfg):
     cfg["model_batch_size"] = cfg["batch_size"] // cfg["seq_len"] # * 16
     cfg["buffer_size"] = cfg["batch_size"] * cfg["buffer_mult"]
     cfg["buffer_batches"] = cfg["buffer_size"] // cfg["seq_len"]
-    cfg["act_name"] = utils.get_act_name(cfg["site"], cfg['layer'], cfg['layer_type'], cfg['name_only'])
+    if cfg['name_only']:
+        cfg["act_name"] = cfg["site"]
+    else:
+        cfg["act_name"] = utils.get_act_name(cfg["site"], cfg['layer'], cfg['layer_type'])
     cfg["dict_size"] = cfg["act_size"] * cfg["dict_mult"]
     return cfg
 
