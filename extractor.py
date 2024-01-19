@@ -12,6 +12,7 @@ import os
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+from logger import logger
 
 class Concept_Extractor(nn.Module):
     """
@@ -132,12 +133,13 @@ class AutoEncoder(Concept_Extractor):
         best_reconstruct = 0
         time_start=time.time()
         for epoch in range(self.cfg['epoch']):
-            print('epoch:', epoch)
-            print('total iterations:', dataloader.__len__())
+            logger.info('epoch:{}'.format(epoch + 1))
+            logger.info('total iterations:{}'.format(dataloader.__len__()))
+            logger.info('\n')
             if epoch > 0:
                 dataloader.reinit()
             for iter in range(dataloader.__len__()): 
-                activations = dataloader.next()
+                activations = dataloader.next() 
                 activations = activations.to(self.cfg["device"])
                 acti_reconstruct, mid_acts = self.forward(activations)
                 l2_loss =  (acti_reconstruct.float() - activations.float()).pow(2).sum(-1).mean()
@@ -148,22 +150,23 @@ class AutoEncoder(Concept_Extractor):
                     self.remove_parallel_component_of_grads()
                 optimizer.step()
                 optimizer.zero_grad()
-                loss_dict = {"loss": loss.item(), "l2_loss": l2_loss.item(), "l1_loss": l1_loss.item()}
+                loss_dict = {"AE_loss": loss.item(), "l2_loss": l2_loss.item(), "l1_loss": l1_loss.item()}
                 
                 if (iter + 1) % self.cfg['val_freq'] == 0:
                     time_end=time.time()
-                    print('\nEpoch:', (epoch+1)," Iteration:", iter+1, " Total time:", time_end-time_start, "s")
-                    print(f"Finished: {(100 * (iter+1) / self.cfg['num_batches']):.3f}", "% of Epoch ", epoch)
-                    print(loss_dict)
+                    logger.info('Epoch: {} Iteration: {} Total time: {:.4f}s'.format(epoch+1, iter+1, time_end-time_start))
+                    logger.info("Finished: {:.3f} % of Epoch {}".format((100 * (iter+1) / self.cfg['num_batches']), epoch + 1))
+                    logger.info(" ".join(["{}: {:.4f}".format(metric_name, metric_val) for metric_name, metric_val in loss_dict.items()]))
                     x = AE_Evaluator.get_recons_loss(self, dataloader, model, self.cfg, num_batches=5)
                     l0 = AE_Evaluator.get_l0_norm(self, dataloader, self.cfg, num_batches=5)
-                    print("l0 norm:", l0)
+                    logger.info("l0 norm: {:.4f}".format(l0))
                     if x[0] > best_reconstruct:
                         best_reconstruct = x[0]
                         self.save(save_dir, ckpt_name="best_reconstruct")
+                    print('\n')
                         
                 if (iter + 1) % 10000 == 0:
-                    print('saved at:', save_dir)
+                    logger.info('saved at:', save_dir)
                     self.save(save_dir, ckpt_name="Iteration" + str(iter+1) + "_Epoch" + str(epoch+1))
                     freqs, num_dead = AE_Evaluator.get_freqs(self, dataloader, self.cfg, num_batches=25)
                     if self.cfg['reinit'] == 1:
@@ -229,7 +232,7 @@ class TCAV_Extractor(Concept_Extractor):
 
         acc = np.mean(accuracy_test_list)
         self.cavs = cavs
-        print('Acc in training set:{:.2f}, in test set:{:.2f}'.format(np.mean(accuracy_train_list), np.mean(accuracy_test_list)))
+        logger.info('Acc in training set: {:.2f}, in test set: {:.2f}'.format(np.mean(accuracy_train_list), np.mean(accuracy_test_list)))
         return cavs, acc
     
     def save_cav(self, path):

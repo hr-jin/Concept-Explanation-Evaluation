@@ -4,6 +4,7 @@ import numpy as np
 from utils import *
 from dataloader import *
 from functools import partial
+from logger import logger
 
 class Concept_Evaluator:
     """
@@ -38,7 +39,7 @@ class TCAV_Evaluator(Concept_Evaluator):
         return outputs, grad, cache
     
     def get_tcav_score(self, test_examples):
-        print('calculating logits and grads...')
+        logger.info('calculating logits and grads...')
         _, grad, _ = self.get_logits_grad(test_examples)
         sensitivities = [np.dot(grad, cav) for cav in self.concept_cavs]
         sensitivities = np.array(sensitivities).transpose()
@@ -61,11 +62,11 @@ class TCAV_Evaluator(Concept_Evaluator):
             positive_effects.append(positive_score)
             negative_effects.append(negative_score)
 
-        print(f'Evaluate on {self.tokenizer.decode(self.logit_token_idx)} as the next token.')
-        print('TCAV count score for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(tcavs), np.std(tcavs)))
-        print('TCAV positive effects for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(positive_effects),
+        logger.info(f'Evaluate on {self.tokenizer.decode(self.logit_token_idx)} as the next token.')
+        logger.info('TCAV count score for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(tcavs), np.std(tcavs)))
+        logger.info('TCAV positive effects for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(positive_effects),
                                                                                     np.std(positive_effects)))
-        print('TCAV negative effects for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(negative_effects),
+        logger.info('TCAV negative effects for the concept: mean {:.2f}, std {:.2f}'.format(np.mean(negative_effects),
                                                                                     np.std(negative_effects)))
 
         positive_mean_effects = np.mean(positive_effects)
@@ -90,7 +91,6 @@ class AE_Evaluator(Concept_Evaluator):
     @staticmethod
     def get_freqs(AE, dataloader, cfg, num_batches=25):
         with torch.no_grad():
-            print('get freqs...')
             act_freq_scores = torch.zeros(AE.d_hidden, dtype=torch.float32).to(cfg['device'])
             total = 0
             for i in range(num_batches):
@@ -117,15 +117,14 @@ class AE_Evaluator(Concept_Evaluator):
                 loss_list.append((loss, recons_loss, zero_abl_loss))
             losses = torch.tensor(loss_list)
             loss, recons_loss, zero_abl_loss = losses.mean(0).tolist()
-            print(f"loss: {loss:.4f}, recons_loss: {recons_loss:.4f}, zero_abl_loss: {zero_abl_loss:.4f}")
+            logger.info(f"loss: {loss:.4f} recons_loss: {recons_loss:.4f} zero_abl_loss: {zero_abl_loss:.4f}")
             score = ((zero_abl_loss - recons_loss)/(zero_abl_loss - loss))
-            print(f"Reconstruction Score: {score:.2%}")
+            logger.info(f"Reconstruction Score: {score:.2%}")
             return score, loss, recons_loss, zero_abl_loss
 
     @staticmethod
     def get_l0_norm(AE, dataloader, cfg, num_batches=5):
         with torch.no_grad():
-            print('get l0 norm...')
             num_feature = AE.d_hidden
             l0_norms = []
             for i in range(num_batches):

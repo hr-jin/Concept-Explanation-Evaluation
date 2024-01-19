@@ -1,14 +1,14 @@
 from transformer_lens import utils
 import torch
-import json
 import datasets
 import numpy as np
 import random
 import os
-import torch.nn.functional as F
 from transformers import LlamaConfig, LlamaForCausalLM, AutoTokenizer
 from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 from transformer_lens import HookedTransformer
+from logger import logger
+
 
 def set_seed(seed):
     random.seed(seed)
@@ -65,9 +65,7 @@ def load_model(args, device_list=None):
         else:
             start_idx = int(device.split(':')[-1])
             device_list = [('cuda:' + str(i)) for i in range(start_idx, start_idx + n_devices)]
-        print(device_list)
         
-        print(model_config)
         device_map['model.embed_tokens.weight'] = device_list[0]
         device_map['model.norm.weight'] = device_list[-1]
         device_map['lm_head.weight'] = device_list[-1]
@@ -77,7 +75,6 @@ def load_model(args, device_list=None):
             device_map['model.layers.'+str(i)+'.input_layernorm'] = device_list[i // (32 // len(device_list) + 1)]
             device_map['model.layers.'+str(i)+'.post_attention_layernorm'] = device_list[i // (32 // len(device_list) + 1)]
         
-        print(device_map)
         hf_model = load_checkpoint_and_dispatch(
             model_config, checkpoint=model_path, device_map=device_map
         )
@@ -170,6 +167,6 @@ def process_cfg(cfg, model_to_interpret):
     cfg["num_batches"] = cfg["num_tokens"] // cfg["batch_size"] 
     cfg = post_init_cfg(cfg)
     
-    print("Updated config")
+    logger.info("Updated config")
     
     return cfg

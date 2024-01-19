@@ -1,5 +1,5 @@
 import torch
-
+from logger import logger
 
 class Dataloader_base():
     """
@@ -54,7 +54,7 @@ class AE_Dataloader(Dataloader_base):
         return self.cfg['num_batches']
         
     def refresh(self):
-        print("\nbuffer refreshing...")
+        logger.info("buffer refreshing...\n")
         self.pointer = 0
         with torch.autocast("cuda", torch.float16):
             num_batches = self.cfg["buffer_batches"]

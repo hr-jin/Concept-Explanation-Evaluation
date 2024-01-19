@@ -5,8 +5,13 @@ from extractor import *
 from dataloader import *
 from config import cfg as default_cfg
 import pandas as pd
+import logging
 
 def main():
+
+    logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO, force=True)
+    logger = logging.getLogger('logger')
+
     parser = argparse.ArgumentParser()
     
     cfg, args = arg_parse_update_cfg(default_cfg, parser)
@@ -36,12 +41,10 @@ def main():
     extractor = TCAV_Extractor(cfg, model=model_to_interpret)
     
     print(json.dumps(cfg, indent=2))
-    print(model_to_interpret.cfg.device)
+    logger.info(model_to_interpret.cfg.device)
     
     cavs, acc = extractor.extract_concepts(dataloader) #, train_loader)
-    
-    # print('cavs:', cavs)
-    
+        
     evaluator = TCAV_Evaluator(cfg, model_to_interpret, cavs, logit_token_idx=7420) # 7420(low) 7423(high)
     tcavs_score, positive_mean_effects, negative_mean_effects = evaluator.get_tcav_score(random_input_examples)
     
