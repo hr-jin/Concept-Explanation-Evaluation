@@ -134,7 +134,11 @@ def arg_parse_update_cfg(default_cfg, parser):
     """
     cfg = dict(default_cfg)
     for key, value in default_cfg.items():
-        if type(value) == bool:
+        if key == 'extractor':
+            parser.add_argument(f"--{key}", choices=["ae", "tcav"], default="ae")
+        elif key == 'model_to_interpret':
+            parser.add_argument(f"--{key}", choices=["llama-2-7b-chat", "pythia-70m"], default="pythia-70m")
+        elif type(value) == bool:
             if value:
                 parser.add_argument(f"--{key}", action="store_false")
             else:
@@ -167,6 +171,12 @@ def process_cfg(cfg, model_to_interpret):
     cfg["num_batches"] = cfg["num_tokens"] // cfg["batch_size"] 
     cfg = post_init_cfg(cfg)
     
+    save_path = f"model_{cfg['model_to_interpret']}_layer_{cfg['layer']}_dictSize_{cfg['dict_size']}_site_{cfg['site']}"
+    save_dir = os.path.join(cfg['output_dir'], save_path)
+    os.makedirs(save_dir, exist_ok=True)
+    cfg['save_dir'] = save_dir
+    
     logger.info("Updated config")
+    
     
     return cfg

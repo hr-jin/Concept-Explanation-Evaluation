@@ -1,12 +1,20 @@
 # Parameters written as none will be automatically set in the code, and all properties can be modified through command line parameters.
 # e.g. --dict_mult 2
 cfg = {
+        ## global
+        "seed": 49,
+        'device_list':'1,2,3,4,5,6',
+        "extractor": 'ae', # choose from ["ae", "tcav"]
+        'evaluator': 'rc',
+        "model_to_interpret":"pythia-70m", # choose from ["llama-2-7b-chat", "pythia-70m"]
+        "load_path": "{The path where you save checkpoints, e.g. /user/data/outputs/AE/best_reconstruct}",
+        "load_extractor": False,
+
         ## AutoEncoder
         "dict_mult": 8,
         "d_mlp": None,
         "d_model": None,
         "val_freq":100,
-        "model_to_interpret":"pythia-70m",
         "data_dir": "{The directory where you save datasets, e.g. /user/data/datasets/pile/}",
         "dataset_name": "{The training dataset name, e.g. pile-tokenized-10b}",
         "output_dir": "{The directory where you save checkpoints, e.g. /user/data/outputs/AE}",
@@ -37,8 +45,7 @@ cfg = {
         "tokenized":False, # Whether the training data has been tokenized
         "data_from_hf":True, # Whether the dataset is downloaded from huggingface
         
-        ## global
-        "seed": 49,
+        
         
         ## Which layer and part of the model should be explained?
         "layer": 0,
