@@ -9,6 +9,7 @@ from logger import logger
 from functools import partial
 from sklearn.cluster import KMeans
 from sklearn import metrics
+import torch.nn.functional as F
 
 class BaseEvaluator(metaclass=ABCMeta):
     def __init__(self, cfg, activation_func, model):
@@ -35,7 +36,7 @@ class BaseEvaluator(metaclass=ABCMeta):
     @staticmethod
     def ablation_hook(hidden_states, hook, concept):
         concept_normed = concept / concept.norm(dim=-1, keepdim=True)
-        hidden_states_proj = hidden_states * concept_normed
+        hidden_states_proj = (hidden_states * concept_normed).sum(-1).unsqueeze(-1) * concept_normed
         hidden_states_ortho = hidden_states - hidden_states_proj
         output = hidden_states_ortho / hidden_states_ortho.norm(dim=-1, keepdim=True) * hidden_states.norm(dim=-1, keepdim=True)
         return output
@@ -46,6 +47,34 @@ class BaseEvaluator(metaclass=ABCMeta):
         concept_renormed = concept / concept.norm(dim=-1, keepdim=True)
         output = concept_renormed.unsqueeze(0).unsqueeze(0) * f_norm
         return output
+    
+    def get_loss_diff(self, tokens, concept, hook):
+        loss = self.model.run_with_hooks(tokens, return_type='loss')
+        loss_disturbed = self.model.run_with_hooks(tokens, return_type='loss', fwd_hooks=[(self.cfg["act_name"], partial(hook, concept=concept))])
+        return loss_disturbed - loss
+    
+    def get_class_logit_diff(self, tokens, concept, class_idx, hook):
+        logit = self.model.run_with_hooks(tokens)[:,:,class_idx]
+        logit_disturbed = self.model.run_with_hooks(tokens, fwd_hooks=[(self.cfg["act_name"], partial(hook, concept=concept))])[:,:,class_idx]
+        return logit_disturbed - logit
+    
+    def get_logit_distribution_corr(self, tokens, concept, hook, topk=None, corr_func='cosine'):
+        origin_logits = self.model.run_with_hooks(tokens)
+        disturbed_logits = self.model.run_with_hooks(tokens, fwd_hooks=[(self.cfg["act_name"], partial(hook, concept=concept))])
+        if topk != None:
+            origin_values, origin_indices = torch.topk(origin_logits, k=topk, dim=-1, sorted=True)
+        else:
+            origin_values, origin_indices = torch.topk(origin_logits, k=origin_logits.shape[-1], dim=-1, sorted=True)
+        disturbed_values = disturbed_logits.gather(-1, origin_indices)
+        if corr_func == 'cosine':
+            corr = torch.cosine_similarity(origin_values.detach(), disturbed_values.detach(), dim=-1)
+        elif corr_func == 'KL_div':
+            corr = F.kl_div(disturbed_values.softmax(dim=-1).log(), origin_values.softmax(dim=-1), reduction='mean')
+        elif corr_func == 'openai_var':
+            corr = 1 - (disturbed_values - origin_values).square().mean(-1) / torch.var(origin_values, dim=-1)
+        else:
+            assert False, "Correlation type not supported yet. please choose from: ['cosine', 'KL_div', 'openai_var']."
+        return corr
     
     def get_preferred_predictions_of_concept(self, tokens, concept):
         logits = self.model.run_with_hooks(tokens[:2], fwd_hooks=[(self.cfg["act_name"], partial(self.replacement_hook, concept=concept))])[0][0]
