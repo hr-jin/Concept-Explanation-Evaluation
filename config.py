@@ -9,7 +9,6 @@ cfg = {
         "model_to_interpret":"pythia-70m", # choose from ["llama-2-7b-chat", "pythia-70m"]
         "load_path": "{The path where you save checkpoints, e.g. /user/data/outputs/AE/best_reconstruct}",
         "load_extractor": False,
-
         ## AutoEncoder
         "dict_mult": 8,
         "d_mlp": None,
@@ -24,7 +23,7 @@ cfg = {
         'remove_parallel': 1,
         'tied_enc_dec':0,
         "epoch": 1,
-        
+
         ## Training
         "num_batches": None,
         "device": "cuda:0",
@@ -45,8 +44,6 @@ cfg = {
         "tokenized":False, # Whether the training data has been tokenized
         "data_from_hf":True, # Whether the dataset is downloaded from huggingface
         
-        
-        
         ## Which layer and part of the model should be explained?
         "layer": 0,
         "site": "resid_post",
@@ -58,4 +55,14 @@ cfg = {
         "beta2": 0.99,
         "lr": 0.001,
         
+        ## intrinsic probing
+        "language": "eng",
+        "embedding": "bert",     # bert/fasttext
+        "trainer": "map",        # map/mle
+        "attribute": None,
+        "diagonalize": False,
+        "max_iter": 5,
+        "show_charts":False,
+        "selection_criterion": "log_likelihood", # accuracy / log_likelihood / mi
+        'log_wandb': False, # to use wandb
     }
