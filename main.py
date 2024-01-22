@@ -37,17 +37,20 @@ def main():
         logger.info('extract concepts...')
         extractor.extract_concepts(model)
         
+    
     concepts = extractor.get_concepts()
     print('concept vectors:', concepts)
+    
+    concept_idx = 2919
         
     evaluator = evaluator_factory(cfg, extractor.activation_func, model)
     token_list = []
     
-    for i in range(1):
-        tokens = dataloader.get_processed_batch()
+    for i in range(20):
+        tokens = dataloader.get_processed_random_batch()
         token_list.append(tokens)
     tokens = torch.cat(token_list, 0)
-    evaluator.get_most_critical_tokens(tokens, concept_idx=2919)
+    evaluator.get_metric(tokens, concept=concepts[concept_idx], concept_idx=concept_idx, pmi_type='silhouette')
     
     
 if __name__ == "__main__":

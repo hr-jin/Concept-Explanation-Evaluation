@@ -1,7 +1,9 @@
-from .eva1 import Evaluator1
+from .itc import InputTopicCoherenceEvaluator
+from .otc import OutputTopicCoherenceEvaluator
 
 EVALUATORS = {
-    Evaluator1.code(): Evaluator1,
+    InputTopicCoherenceEvaluator.code(): InputTopicCoherenceEvaluator,
+    OutputTopicCoherenceEvaluator.code(): OutputTopicCoherenceEvaluator,
 }
 
 def evaluator_factory(cfg, activation_func, model):

@@ -5,10 +5,10 @@ cfg = {
         "seed": 49,
         'device_list':'1,2,3,4,5,6',
         "extractor": 'ae', # choose from ["ae", "tcav"]
-        'evaluator': 'rc',
         "model_to_interpret":"pythia-70m", # choose from ["llama-2-7b-chat", "pythia-70m"]
         "load_path": "{The path where you save checkpoints, e.g. /user/data/outputs/AE/best_reconstruct}",
         "load_extractor": False,
+        
 
         ## AutoEncoder
         "dict_mult": 8,
@@ -31,6 +31,10 @@ cfg = {
         "batch_size": 8192,
         "l1_coeff": 0.5,
         "n_devices": 1, # For a relatively large model that requires multiple GPUs to load, load it onto 'n_devices' GPUs starting from 'device'.
+        
+        ## Concept Evaluating
+        'evaluator': 'itc',
+        'concept_eval_batchsize': 128,
         
         ## Buffer in AE_Dataloader
         "buffer_size": None,
