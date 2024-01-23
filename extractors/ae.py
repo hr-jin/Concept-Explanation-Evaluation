@@ -43,13 +43,10 @@ class AutoEncoder(nn.Module, BaseExtractor):
         
     def forward(self, x):
         x_cent = x - self.b_dec
-        # print('x_cent:', x_cent[0])
         if self.cfg['tied_enc_dec'] == 1:
             acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
         else:
             acts = F.relu(x_cent @ self.W_enc + self.b_enc)
-            # print('x_cent @ self.W_enc:', x_cent @ self.W_enc)
-            # print('self.b_enc:', self.b_enc)
         
         x_reconstruct = acts @ self.W_dec + self.b_dec
         return x_reconstruct, acts
