@@ -42,7 +42,7 @@ def run_with_cache_onesentence(
         model_out = model(*model_args, **model_kwargs)
         last_token_logit = model_out[:, seq_len-1, :]
         if incl_bwd:
-            last_token_logit[0, logit_token_idx].backward()
+            last_token_logit.squeeze()[logit_token_idx].backward()
 
     return model_out, cache_dict
     
