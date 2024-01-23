@@ -36,6 +36,10 @@ cfg = {
         'evaluator': 'itc',
         'concept_eval_batchsize': 128,
         
+        ## Metric Evaluating
+        'metric_evaluator': 'RC',
+        'metric_eval_batchsize': 128 * 5,
+        
         ## Buffer in AE_Dataloader
         "buffer_size": None,
         "buffer_mult": 400,

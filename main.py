@@ -68,22 +68,11 @@ def main():
     )
     
     token_list = []
-    for _ in range(10):
+    for _ in range(30):
         tokens = dataloader.get_processed_random_batch()
         token_list.append(tokens)
     tokens = torch.cat(token_list, 0)
     metric = evaluator.get_metric(tokens)
-                         
-    
-    
-    # evaluator.get_metric(tokens, 
-    #                     concept=concepts[concept_idx], 
-    #                     concept_idx=concept_idx, 
-    #                     disturb='replace', # ['ablation', 'gradient', 'replace']
-    #                     measure_obj='logits', # ['loss', 'class_logit', 'logits']
-    #                     corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
-    #                     class_idx=7000, 
-    #                     logits_corr_topk=10)
     
     
 if __name__ == "__main__":
