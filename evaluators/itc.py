@@ -1,14 +1,8 @@
 from .base import BaseEvaluator
-from functools import partial
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import json
-import pprint
 from logger import logger
-import os
-import time
 import numpy as np
 
 class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):

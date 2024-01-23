@@ -1,17 +1,13 @@
 from abc import *
 import torch
-import time
 import numpy as np
-from transformer_lens import utils
 import pandas as pd
 from tqdm import tqdm
 from logger import logger
 from functools import partial
 from sklearn.cluster import KMeans
 from sklearn import metrics
-import torch.nn.functional as F
 from utils import *
-import scipy.stats
 
 class BaseEvaluator(metaclass=ABCMeta):
     def __init__(self, cfg, activation_func, model):

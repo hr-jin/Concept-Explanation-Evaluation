@@ -1,17 +1,10 @@
 from .base import BaseEvaluator
-from functools import partial
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import json
-import pprint
 from logger import logger
-import os
-import time
 import numpy as np
 from tqdm import tqdm
-from transformer_lens import HookedTransformer
 
 class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
     def __init__(
