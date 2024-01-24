@@ -13,7 +13,8 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         model, 
         concept=None, 
         concept_idx=-1, 
-        pmi_type='uci'
+        pmi_type='uci',
+        
     ):
         nn.Module.__init__(self)
         BaseEvaluator.__init__(self, cfg, activation_func, model)
@@ -24,6 +25,10 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
     @classmethod
     def code(cls):
         return 'itc'
+    
+    def update_concept(self, concept=None, concept_idx=-1):
+        self.concept = concept
+        self.concept_idx = concept_idx
     
     def get_metric(self, eval_tokens):
         most_critical_tokens, most_critical_token_idxs = self.get_most_critical_tokens(eval_tokens, self.concept, self.concept_idx)

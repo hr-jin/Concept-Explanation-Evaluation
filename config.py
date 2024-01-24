@@ -3,9 +3,9 @@
 cfg = {
         ## global
         "seed": 49,
-        'device_list':'1,2,3,4,5,6',
+        'device_list': '1,2,3,4,5,6',
         "extractor": 'ae', # choose from ["ae", "tcav"]
-        "model_to_interpret":"pythia-70m", # choose from ["llama-2-7b-chat", "pythia-70m"]
+        "model_to_interpret": "pythia-70m", # choose from ["llama-2-7b-chat", "pythia-70m"]
         "load_path": "{The path where you save checkpoints, e.g. /user/data/outputs/AE/best_reconstruct}",
         "load_extractor": False,
         
@@ -14,7 +14,7 @@ cfg = {
         "dict_mult": 8,
         "d_mlp": None,
         "d_model": None,
-        "val_freq":100,
+        "val_freq": 100,
         "data_dir": "{The directory where you save datasets, e.g. /user/data/datasets/pile/}",
         "dataset_name": "{The training dataset name, e.g. pile-tokenized-10b}",
         "output_dir": "{The directory where you save checkpoints, e.g. /user/data/outputs/AE}",
@@ -22,7 +22,7 @@ cfg = {
         "reinit": 1,
         'init_type': 'kaiming_uniform',
         'remove_parallel': 1,
-        'tied_enc_dec':0,
+        'tied_enc_dec': 0,
         "epoch": 1,
         
         ## Training
@@ -37,7 +37,7 @@ cfg = {
         'concept_eval_batchsize': 128,
         
         ## Metric Evaluating
-        'metric_evaluator': 'RC',
+        'metric_evaluator': 'rc',
         'metric_eval_batchsize': 128 * 5,
         
         ## Buffer in AE_Dataloader

@@ -13,7 +13,7 @@ class OutputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         model, 
         concept=None, 
         concept_idx=None, 
-        pmi_type='uci'
+        pmi_type='uci',
     ):
         nn.Module.__init__(self)
         BaseEvaluator.__init__(self, cfg, activation_func, model)
@@ -24,6 +24,10 @@ class OutputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
     @classmethod
     def code(cls):
         return 'otc'
+    
+    def update_concept(self, concept=None, concept_idx=-1):
+        self.concept = concept
+        self.concept_idx = concept_idx
     
     def get_metric(self, eval_tokens):
         _, most_preferred_tokens, topk_indices = self.get_preferred_predictions_of_concept(eval_tokens, self.concept)

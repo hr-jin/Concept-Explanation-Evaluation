@@ -15,43 +15,64 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
     def code(cls):
         return 'rc'
     
-    def get_metric(self, eval_tokens, evaluator_dict=dict()):            
-        evaluator_names = evaluator_dict.keys()        
+    def get_metric(
+        self, 
+        eval_tokens, 
+        evaluator_dict=dict(), 
+        concepts=[], 
+        concept_idxs=[], 
+        **kwargs
+    ):            
+        evaluator_names = list(evaluator_dict.keys())        
         minibatch = self.cfg['metric_eval_batchsize']
-        
-        eval_tokens_1 = eval_tokens[:eval_tokens.shape[0]//2, :]
-        eval_tokens_2 = eval_tokens[eval_tokens.shape[0]//2:, :]
-        
-        eval_tokens_1 = eval_tokens_1.split(minibatch, dim=0)    
+        origin_tokens = eval_tokens
+        eval_tokens = eval_tokens.split(minibatch, dim=0) 
+          
         metric_list = []
-        for i, tokens in enumerate(eval_tokens_1):
-            logger.info('Metric evaluation, iter {} ...\n'.format(i))
+        for i, tokens in enumerate(eval_tokens):
+            logger.info('Metric evaluation on subdataset {}...\n'.format(i+1))
             tmp_metric_list = []
-            for name, evaluator in evaluator_dict:   
+            for name, evaluator in evaluator_dict.items():  
                 logger.info('Evaluating {} ...'.format(name))
-                metric = evaluator.get_metric(tokens)
-                tmp_metric_list.append(metric)
+                concept_metric_list = []
+                for j, concept_idx in enumerate(concept_idxs):
+                    concept = concepts[j]
+                    evaluator.update_concept(concept, concept_idx) 
+                    concept_metric = evaluator.get_metric(tokens)
+                    concept_metric_list.append(concept_metric)
+                tmp_metric_list.append(concept_metric_list)
             metric_list.append(tmp_metric_list)
-        metrics_1 = torch.tensor(metric_list).transpose() # n_metrics, n_iterations
+        separate_metrics = torch.tensor(metric_list) # n_minibatch, n_metrics, n_concepts
+        separate_metrics = separate_metrics.permute(1,0,2) # n_metrics, n_minibatch, n_concepts
+        separate_vars_agg = torch.var(separate_metrics, dim=-1).sum(-1) # n_metrics
+        integral_vars = torch.var(separate_metrics.sum(1), dim=-1) # n_metrics
         
-        eval_tokens_2 = eval_tokens_2.split(minibatch, dim=0)    
-        metric_list = []
-        for i, tokens in enumerate(eval_tokens_2):
-            logger.info('Metric evaluation, iter {} ...\n'.format(i))
-            tmp_metric_list = []
-            for name, evaluator in evaluator_dict:   
-                logger.info('Evaluating {} ...'.format(name))
-                metric = evaluator.get_metric(tokens)
-                tmp_metric_list.append(metric)
-            metric_list.append(tmp_metric_list)
-        metrics_2 = torch.tensor(metric_list).transpose() # n_metrics, n_iterations
-        
-        metrics = pearsonr(metrics_1, metrics_2).squeeze() # n_metrics              
+        # metric_list = []
+        # logger.info('Metric evaluation on total dataset...\n')
+        # for name, evaluator in evaluator_dict.items():  
+        #     logger.info('Evaluating {} ...'.format(name))
+        #     concept_metric_list = []
+        #     for j, concept_idx in enumerate(concept_idxs):
+        #         concept = concepts[j]
+        #         evaluator.update_concept(concept, concept_idx) 
+        #         concept_metric = evaluator.get_metric(origin_tokens)
+        #         concept_metric_list.append(concept_metric)
+        #     metric_list.append(concept_metric_list)
+        # integral_metrics = torch.tensor(metric_list) # n_metrics, n_concepts
+        # integral_vars = torch.var(integral_metrics, dim=-1) # n_metrics
+        J = separate_metrics.shape[1] 
+        final_metrics = J / (J - 1) * (integral_vars - separate_vars_agg) / integral_vars # n_metrics
+        print('J:', J)
+        print('minibatch_vars_agg:', separate_vars_agg)
+        print('integral_vars:', integral_vars)
+        print('final_metrics.shape:', final_metrics.shape)
+        print('separate_vars_agg.shape:', separate_vars_agg.shape)
+        print('total_vars.shape:', integral_vars.shape)
         logger.info('Metric Consistency: \n{}'.format(
             ' '.join(
-                ['{}:{}'.format(evaluator_names[i],metrics[i]) for i in range(metrics.shape[0])]
+                ['{}:{:4f}'.format(evaluator_names[i],final_metrics[i]) for i in range(final_metrics.shape[0])]
                 )
             ))    
-        return metrics
+        return final_metrics
         
             

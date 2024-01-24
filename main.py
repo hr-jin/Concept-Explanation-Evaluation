@@ -7,6 +7,7 @@ from extractors import extractor_factory
 from datasets_ import dataset_factory
 from models import model_factory
 from evaluators import evaluator_factory
+from metric_evaluators import metric_evaluator_factory
 import json
 
 def main():
@@ -68,11 +69,71 @@ def main():
     )
     
     token_list = []
-    for _ in range(30):
+    for _ in range(60):
         tokens = dataloader.get_processed_random_batch()
         token_list.append(tokens)
     tokens = torch.cat(token_list, 0)
-    metric = evaluator.get_metric(tokens)
+    
+    # metric = evaluator.get_metric(tokens)
+    metric_evaluator = metric_evaluator_factory(cfg)
+    evaluator_dict = {
+        'replace_logits_KL_div': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=concepts[concept_idx], 
+            concept_idx=concept_idx, 
+            disturb='replace', # ['ablation', 'gradient', 'replace']
+            measure_obj='logits', # ['loss', 'class_logit', 'logits']
+            corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
+            class_idx=7000, 
+            logits_corr_topk=10,
+        ),
+        'ablation_logits_KL_div': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=concepts[concept_idx], 
+            concept_idx=concept_idx, 
+            disturb='ablation', # ['ablation', 'gradient', 'replace']
+            measure_obj='logits', # ['loss', 'class_logit', 'logits']
+            corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
+            class_idx=7000, 
+            logits_corr_topk=10,
+        ),
+        'replace_loss_KL_div': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=concepts[concept_idx], 
+            concept_idx=concept_idx, 
+            disturb='replace', # ['ablation', 'gradient', 'replace']
+            measure_obj='loss', # ['loss', 'class_logit', 'logits']
+            corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
+            class_idx=7000, 
+            logits_corr_topk=10,
+        ),
+        'ablation_loss_KL_div': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=concepts[concept_idx], 
+            concept_idx=concept_idx, 
+            disturb='ablation', # ['ablation', 'gradient', 'replace']
+            measure_obj='loss', # ['loss', 'class_logit', 'logits']
+            corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
+            class_idx=7000, 
+            logits_corr_topk=10,
+        ),
+    }
+    metric_of_metrics = metric_evaluator.get_metric(
+        tokens, 
+        evaluator_dict, 
+        concepts=concepts[concept_idx-1:concept_idx+1],
+        concept_idxs=[i for i in range(concept_idx-1,concept_idx+1)]
+    )
+    
+    print('metric_of_metrics:\n',metric_of_metrics)
     
     
 if __name__ == "__main__":

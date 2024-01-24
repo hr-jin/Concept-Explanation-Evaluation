@@ -8,9 +8,15 @@ from functools import partial
 from sklearn.cluster import KMeans
 from sklearn import metrics
 from utils import *
+import torch.nn.functional as F
 
 class BaseEvaluator(metaclass=ABCMeta):
-    def __init__(self, cfg, activation_func, model):
+    def __init__(
+        self, 
+        cfg, 
+        activation_func, 
+        model
+    ):
         super().__init__()
         self.activation_func = activation_func
         self.cfg = cfg
@@ -22,7 +28,10 @@ class BaseEvaluator(metaclass=ABCMeta):
         pass
     
     @torch.no_grad
-    def get_hidden_states(self, tokens):
+    def get_hidden_states(
+        self, 
+        tokens
+    ):
         _, cache = self.model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
         hidden_states = cache[self.cfg["act_name"]]
         return hidden_states
@@ -31,45 +40,88 @@ class BaseEvaluator(metaclass=ABCMeta):
     def get_metric():
         pass
     
+    @abstractmethod
+    def update_concept(self):
+        pass
+    
     @staticmethod
-    def ablation_hook(hidden_states, hook, concept):
-        concept_normed = concept / concept.norm(dim=-1, keepdim=True)
-        hidden_states_proj = (hidden_states * concept_normed).sum(-1).unsqueeze(-1) * concept_normed
-        hidden_states_ortho = hidden_states - hidden_states_proj
-        output = hidden_states_ortho / hidden_states_ortho.norm(dim=-1, keepdim=True) * hidden_states.norm(dim=-1, keepdim=True)
+    def ablation_hook(
+        hidden_states, 
+        hook, 
+        concept, 
+        concept_acts=None
+    ):
+        if concept_acts == None:
+            concept_normed = concept / concept.norm(dim=-1, keepdim=True)
+            hidden_states_proj = (hidden_states * concept_normed).sum(-1).unsqueeze(-1) * concept_normed
+            hidden_states_ortho = hidden_states - hidden_states_proj
+            output = hidden_states_ortho / hidden_states_ortho.norm(dim=-1, keepdim=True) * hidden_states.norm(dim=-1, keepdim=True)
+        else:
+            output = hidden_states - concept_acts.unsqueeze(0).unsqueeze(0) * concept_acts.unsqueeze(0)
         return output
     
     @staticmethod
-    def replacement_hook(hidden_states, hook, concept):
+    def replacement_hook(
+        hidden_states, 
+        hook, 
+        concept, 
+        concept_acts=None
+    ):
         f_norm = hidden_states.norm(dim=-1, keepdim=True)
         concept_renormed = concept / concept.norm(dim=-1, keepdim=True)
         output = concept_renormed.unsqueeze(0).unsqueeze(0) * f_norm
         return output
     
-    def get_loss_diff(self, tokens, concept, hook):
-        loss = self.model.run_with_hooks(tokens, 
-                                         return_type='loss',
-                                         loss_per_token=True
-                                         )
-        loss_disturbed = self.model.run_with_hooks(tokens, 
-                                                   return_type='loss', 
-                                                   loss_per_token=True,
-                                                   fwd_hooks=[(self.cfg["act_name"], partial(hook, concept=concept))]
-                                                   )
+    def get_loss_diff(
+        self, 
+        tokens, 
+        concept, 
+        hook,
+    ):
+        loss = self.model.run_with_hooks(
+            tokens, 
+            return_type='loss',
+            loss_per_token=True
+        )
+        loss_disturbed = self.model.run_with_hooks(
+            tokens, 
+            return_type='loss', 
+            loss_per_token=True,
+            fwd_hooks=[(
+                self.cfg["act_name"], 
+                partial(
+                    hook, 
+                    concept=concept,
+                )
+            )]
+        )
         return (loss_disturbed - loss).cpu().numpy()
     
-    def get_class_logit_diff(self, tokens, concept, class_idx, hook):
+    def get_class_logit_diff(
+        self, 
+        tokens, 
+        concept, 
+        class_idx, 
+        hook,
+    ):
         logit = self.model.run_with_hooks(tokens)[:,:,class_idx]
-        logit_disturbed = self.model.run_with_hooks(tokens, fwd_hooks=[(self.cfg["act_name"], partial(hook, concept=concept))])[:,:,class_idx]
+        logit_disturbed = self.model.run_with_hooks(
+            tokens, 
+            fwd_hooks=[(
+                self.cfg["act_name"], 
+                partial(hook, concept=concept))
+            ]
+        )[:,:,class_idx]
         return (logit_disturbed - logit).cpu().numpy()
     
     def get_loss_gradient(self, tokens):
-        _, cache = self.model.run_with_cache(tokens, 
-                                             return_type='loss', 
-                                             incl_bwd=True, 
-                                             loss_per_token=True,
-                                             names_filter=self.cfg["act_name"]
-                                             )
+        _, cache = self.model.run_with_cache(
+            tokens, 
+            return_type='loss', 
+            incl_bwd=True, 
+            loss_per_token=True,
+            names_filter=self.cfg["act_name"]
+        )
         grad = cache[self.cfg['act_name']+'_grad'].cpu().numpy()
         hidden_state = cache[self.cfg['act_name']].cpu().numpy()
         return grad, hidden_state
@@ -78,21 +130,41 @@ class BaseEvaluator(metaclass=ABCMeta):
         grads = []
         hidden_states = []
         for i in range(tokens.shape[0]):
-            _, cache = run_with_cache_onesentence(tokens[i], 
-                                                model=self.model,
-                                                names_filter=[self.cfg['act_name']], 
-                                                logit_token_idx=class_idx)
+            _, cache = run_with_cache_onesentence(
+                tokens[i], 
+                model=self.model,
+                names_filter=[self.cfg['act_name']], 
+                logit_token_idx=class_idx
+            )
             grads.append(cache[self.cfg['act_name']+'_grad'].cpu().numpy())
             hidden_states.append(cache[self.cfg['act_name']].cpu().numpy())
         grad = np.array(grads)[:,0,:,:]
         hidden_state = np.array(hidden_states)[:,0,:,:]
         return grad, hidden_state
     
-    def get_logit_distribution_corr(self, tokens, concept, hook, topk=None, corr_func='cosine'):
+    def get_logit_distribution_corr(
+        self, 
+        tokens, 
+        concept, 
+        hook, 
+        topk=None, 
+        corr_func='cosine',
+    ):
         origin_logits = self.model.run_with_hooks(tokens)
-        disturbed_logits = self.model.run_with_hooks(tokens, fwd_hooks=[(self.cfg["act_name"], partial(hook, concept=concept))])
+        disturbed_logits = self.model.run_with_hooks(
+            tokens, 
+            fwd_hooks=[(
+                self.cfg["act_name"], 
+                partial(hook, concept=concept)
+                )]
+        )
         if topk != None:
-            origin_values, origin_indices = torch.topk(origin_logits, k=topk, dim=-1, sorted=True)
+            origin_values, origin_indices = torch.topk(
+                origin_logits, 
+                k=topk, 
+                dim=-1, 
+                sorted=True
+            )
             disturbed_values = disturbed_logits.gather(-1, origin_indices)
             
         else:
@@ -100,21 +172,38 @@ class BaseEvaluator(metaclass=ABCMeta):
             disturbed_values = disturbed_logits
         
         if corr_func == 'cosine':
-            corr = torch.cosine_similarity(origin_values.detach(), disturbed_values.detach(), dim=-1)
+            corr = torch.cosine_similarity(
+                origin_values.detach(), 
+                disturbed_values.detach(), 
+                dim=-1
+            )
         elif corr_func == 'KL_div':
             distributed_softmax = torch.softmax(disturbed_values, dim=-1) + 1e-10
             origin_softmax = torch.softmax(origin_values, dim=-1) + 1e-10
-            corr = torch.sum(distributed_softmax * (distributed_softmax.log() - origin_softmax.log()), dim=-1)
+            corr = F.kl_div(distributed_softmax.log(), origin_softmax, reduction='none').sum(-1)
         elif corr_func == 'openai_var':
             corr = 1 - (disturbed_values - origin_values).square().mean(-1) / torch.var(origin_values, dim=-1)
         else:
             assert False, "Correlation type not supported yet. please choose from: ['cosine', 'KL_div', 'openai_var']."
         return corr.cpu().numpy()
     
-    def get_preferred_predictions_of_concept(self, tokens, concept):
-        logits = self.model.run_with_hooks(tokens[:2], fwd_hooks=[(self.cfg["act_name"], partial(self.replacement_hook, concept=concept))])[0][0]
+    def get_preferred_predictions_of_concept(
+        self, 
+        tokens, 
+        concept,
+    ):
+        logits = self.model.run_with_hooks(
+            tokens[:2], 
+            fwd_hooks=[(
+                self.cfg["act_name"], 
+                partial(self.replacement_hook, concept=concept)
+            )]
+        )[0][0]
         top_logits, topk_indices = torch.topk(logits, k=10, dim=0, sorted=True)
-        most_preferred_tokens = np.array([token.strip().lower() for token in self.model.to_str_tokens(topk_indices)])
+        most_preferred_tokens = np.array([
+            token.strip().lower() 
+            for token in self.model.to_str_tokens(topk_indices)
+        ])
         return top_logits, most_preferred_tokens, topk_indices.detach().cpu().numpy()
     
     def get_silhouette_score(self, token_indices):
@@ -126,7 +215,8 @@ class BaseEvaluator(metaclass=ABCMeta):
             kmeans_model = KMeans(n_clusters=num, random_state=0, n_init='auto').fit(X)
             labels = kmeans_model.labels_
             silhouette_score = metrics.silhouette_score(X, labels)
-            logger.info('Number of clusters: {}, silhouette score: {:.4f}'.format(num, silhouette_score))
+            logger.info('Number of clusters: {}, silhouette score: {:.4f}'.format(
+                num, silhouette_score))
             if silhouette_score > best_score:
                 best_score = silhouette_score
                 best_num = num

@@ -14,27 +14,33 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
     def code(cls):
         return 'vr'
     
-    def get_metric(self, eval_tokens, evaluator_dict=dict()):            
-        evaluator_names = evaluator_dict.keys()        
+    def get_metric(
+        self, 
+        eval_tokens, 
+        evaluator_dict=dict(), 
+        **kwargs
+    ):            
+        evaluator_names = list(evaluator_dict.keys())    
         minibatch = self.cfg['metric_eval_batchsize']
         eval_tokens = eval_tokens.split(minibatch, dim=0)  
         
         metric_list = []
         for i, tokens in enumerate(eval_tokens):
-            logger.info('Metric evaluation, iter {} ...\n'.format(i))
+            logger.info('Metric evaluation, iter {} ...\n'.format(i+1))
             tmp_metric_list = []
-            for name, evaluator in evaluator_dict:   
+            for name, evaluator in evaluator_dict.items():   
                 logger.info('Evaluating {} ...'.format(name))
                 metric = evaluator.get_metric(tokens)
                 tmp_metric_list.append(metric)
             metric_list.append(tmp_metric_list)
-        metrics = torch.tensor(metric_list).transpose() # n_metrics, n_iterations
+        metrics = torch.tensor(metric_list).transpose(0,1) # n_metrics, n_iterations
         
         pearsonr_list = []
         for i in metrics:
             tmp_list = []
             for j in metrics:
-                tmp_list.append(pearsonr(i, j))
+                # tmp_list.append(pearsonr(i, j))
+                tmp_list.append(torch.cosine_similarity(i, j, dim=-1))
             pearsonr_list.append(tmp_list)
         metrics = np.array(pearsonr_list) # n_metrics * n_metrics
         logger.info('Metric Validity Relevance: \n{}'.format(str(metrics)))    

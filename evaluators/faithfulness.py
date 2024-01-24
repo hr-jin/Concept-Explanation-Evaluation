@@ -18,7 +18,8 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         measure_obj='loss', 
         corr_func='cosine', 
         class_idx=0, 
-        logits_corr_topk=None
+        logits_corr_topk=None,
+        return_type='09max-0max', 
     ):
         nn.Module.__init__(self)
         BaseEvaluator.__init__(self, cfg, activation_func, model)
@@ -29,10 +30,15 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         self.corr_func = corr_func
         self.class_idx = class_idx
         self.logits_corr_topk = logits_corr_topk
+        self.return_type = return_type
         
     @classmethod
     def code(cls):
         return 'faithfulness'
+    
+    def update_concept(self, concept=None, concept_idx=-1):
+        self.concept = concept
+        self.concept_idx = concept_idx
     
     def get_metric(self, eval_tokens):
         
@@ -73,42 +79,50 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
             elif self.disturb == 'ablation':
                 with torch.no_grad():
                     if self.measure_obj == 'logits':
-                        metric = self.get_logit_distribution_corr(tokens, 
-                                                                concept=self.concept, 
-                                                                hook=self.ablation_hook, 
-                                                                topk=self.logits_corr_topk, 
-                                                                corr_func=self.corr_func) # minibatch * maxlen
+                        metric = self.get_logit_distribution_corr(
+                            tokens, 
+                            concept=self.concept, 
+                            hook=self.ablation_hook, 
+                            topk=self.logits_corr_topk, 
+                            corr_func=self.corr_func,
+                        ) # minibatch * maxlen
                     elif self.measure_obj == 'loss':
-                        metric = self.get_loss_diff(tokens, 
-                                                    concept=self.concept,
-                                                    hook=self.ablation_hook
-                                                    ) # minibatch * (maxlen-1)
+                        metric = self.get_loss_diff(
+                            tokens, 
+                            concept=self.concept,
+                            hook=self.ablation_hook,
+                        ) # minibatch * (maxlen-1)
                     elif self.measure_obj == 'class_logit':
-                        metric = self.get_class_logit_diff(tokens,
-                                                        concept=self.concept,
-                                                        class_idx=self.class_idx,
-                                                        hook=self.ablation_hook
-                                                        ) # minibatch * maxlen
+                        metric = self.get_class_logit_diff(
+                            tokens,
+                            concept=self.concept,
+                            class_idx=self.class_idx,
+                            hook=self.ablation_hook,
+                        ) # minibatch * maxlen
                 
             elif self.disturb == 'replace':
                 with torch.no_grad():
                     if self.measure_obj == 'logits':
-                        metric = self.get_logit_distribution_corr(tokens, 
-                                                                concept=self.concept, 
-                                                                hook=self.replacement_hook, 
-                                                                topk=self.logits_corr_topk, 
-                                                                corr_func=self.corr_func)
+                        metric = self.get_logit_distribution_corr(
+                            tokens, 
+                            concept=self.concept, 
+                            hook=self.replacement_hook, 
+                            topk=self.logits_corr_topk, 
+                            corr_func=self.corr_func,
+                        )
                     elif self.measure_obj == 'loss':
-                        metric = self.get_loss_diff(tokens, 
-                                                    concept=self.concept,
-                                                    hook=self.replacement_hook
-                                                    )
+                        metric = self.get_loss_diff(
+                            tokens, 
+                            concept=self.concept,
+                            hook=self.replacement_hook,
+                        )
                     elif self.measure_obj == 'class_logit':
-                        metric = self.get_class_logit_diff(tokens,
-                                                        concept=self.concept,
-                                                        class_idx=self.class_idx,
-                                                        hook=self.replacement_hook
-                                                        )
+                        metric = self.get_class_logit_diff(
+                            tokens,
+                            concept=self.concept,
+                            class_idx=self.class_idx,
+                            hook=self.replacement_hook,
+                        )
             metrics.append(metric)
         
         
@@ -144,6 +158,22 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         logger.info('weighted avg by concept activation: {:4E}'.format(weighted_metric))    
         logger.info('weighted sum by 1-normed concept activation: {:4E}'.format(weighted_normed_metric))  
         logger.info('weighted sum by softmaxed concept activation: {:4E}'.format(weighted_softmax_metric))      
-        return metric
+        
+        if self.return_type == 'avg_0max':
+            return pos_act_metric
+        elif self.return_type == 'avg_08max':
+            return pos_act_metric_08max
+        elif self.return_type == 'avg_09max':
+            return pos_act_metric_09max
+        elif self.return_type == 'weighted':
+            return weighted_metric
+        elif self.return_type == 'weighted_normed':
+            return weighted_normed_metric
+        elif self.return_type == 'weighted_softmax':
+            return weighted_softmax_metric
+        elif self.return_type == '09max-0max':
+            return pos_act_metric_09max - pos_act_metric
+        else:
+            assert False, "return_type must be one of ['avg_0max', 'avg_08max','avg_09max','weighted','weighted_normed','weighted_softmax','09max-0max']"
         
             
