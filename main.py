@@ -55,82 +55,108 @@ def main():
     # )
     
     # faithfulness
-    evaluator = evaluator_factory(
-        cfg, 
-        extractor.activation_func, 
-        model,
-        concept=concepts[concept_idx], 
-        concept_idx=concept_idx, 
-        disturb='replace', # ['ablation', 'gradient', 'replace']
-        measure_obj='logits', # ['loss', 'class_logit', 'logits']
-        corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
-        class_idx=7000, 
-        logits_corr_topk=10
-    )
+    # evaluator = evaluator_factory(
+    #     cfg, 
+    #     extractor.activation_func, 
+    #     model,
+    #     concept=concepts[concept_idx], 
+    #     concept_idx=concept_idx, 
+    #     disturb='replace', # ['ablation', 'gradient', 'replace']
+    #     measure_obj='logits', # ['loss', 'class_logit', 'logits']
+    #     corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
+    #     class_idx=7000, 
+    #     logits_corr_topk=10
+    # )
     
     token_list = []
-    for _ in range(60):
+    for _ in range(5):
         tokens = dataloader.get_processed_random_batch()
         token_list.append(tokens)
     tokens = torch.cat(token_list, 0)
     
     # metric = evaluator.get_metric(tokens)
     metric_evaluator = metric_evaluator_factory(cfg)
+    # evaluator_dict = {
+    #     'replace_logits_KL_div': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=concepts[concept_idx], 
+    #         concept_idx=concept_idx, 
+    #         disturb='replace', # ['ablation', 'gradient', 'replace']
+    #         measure_obj='logits', # ['loss', 'class_logit', 'logits']
+    #         corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
+    #         class_idx=7000, 
+    #         logits_corr_topk=10,
+    #     ),
+    #     'ablation_logits_KL_div': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=concepts[concept_idx], 
+    #         concept_idx=concept_idx, 
+    #         disturb='ablation', # ['ablation', 'gradient', 'replace']
+    #         measure_obj='logits', # ['loss', 'class_logit', 'logits']
+    #         corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
+    #         class_idx=7000, 
+    #         logits_corr_topk=10,
+    #     ),
+    #     'replace_loss_KL_div': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=concepts[concept_idx], 
+    #         concept_idx=concept_idx, 
+    #         disturb='replace', # ['ablation', 'gradient', 'replace']
+    #         measure_obj='loss', # ['loss', 'class_logit', 'logits']
+    #         corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
+    #         class_idx=7000, 
+    #         logits_corr_topk=10,
+    #     ),
+    #     'ablation_loss_KL_div': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=concepts[concept_idx], 
+    #         concept_idx=concept_idx, 
+    #         disturb='ablation', # ['ablation', 'gradient', 'replace']
+    #         measure_obj='loss', # ['loss', 'class_logit', 'logits']
+    #         corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
+    #         class_idx=7000, 
+    #         logits_corr_topk=10,
+    #     ),
+    # }
     evaluator_dict = {
-        'replace_logits_KL_div': evaluator_factory(
+        'itc_silhouette': evaluator_factory(
             cfg, 
             extractor.activation_func, 
             model,
             concept=concepts[concept_idx], 
             concept_idx=concept_idx, 
-            disturb='replace', # ['ablation', 'gradient', 'replace']
-            measure_obj='logits', # ['loss', 'class_logit', 'logits']
-            corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
-            class_idx=7000, 
-            logits_corr_topk=10,
+            pmi_type='silhouette', # ['uci', 'umass', 'silhouette']
         ),
-        'ablation_logits_KL_div': evaluator_factory(
+        'itc_uci': evaluator_factory(
             cfg, 
             extractor.activation_func, 
             model,
             concept=concepts[concept_idx], 
             concept_idx=concept_idx, 
-            disturb='ablation', # ['ablation', 'gradient', 'replace']
-            measure_obj='logits', # ['loss', 'class_logit', 'logits']
-            corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
-            class_idx=7000, 
-            logits_corr_topk=10,
+            pmi_type='uci', # ['uci', 'umass', 'silhouette']
         ),
-        'replace_loss_KL_div': evaluator_factory(
+        'itc_umass': evaluator_factory(
             cfg, 
             extractor.activation_func, 
             model,
             concept=concepts[concept_idx], 
             concept_idx=concept_idx, 
-            disturb='replace', # ['ablation', 'gradient', 'replace']
-            measure_obj='loss', # ['loss', 'class_logit', 'logits']
-            corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
-            class_idx=7000, 
-            logits_corr_topk=10,
-        ),
-        'ablation_loss_KL_div': evaluator_factory(
-            cfg, 
-            extractor.activation_func, 
-            model,
-            concept=concepts[concept_idx], 
-            concept_idx=concept_idx, 
-            disturb='ablation', # ['ablation', 'gradient', 'replace']
-            measure_obj='loss', # ['loss', 'class_logit', 'logits']
-            corr_func='KL_div', # ['cosine', 'KL_div', 'openai_var']
-            class_idx=7000, 
-            logits_corr_topk=10,
+            pmi_type='umass', # ['uci', 'umass', 'silhouette']
         ),
     }
     metric_of_metrics = metric_evaluator.get_metric(
         tokens, 
         evaluator_dict, 
-        concepts=concepts[concept_idx-1:concept_idx+1],
-        concept_idxs=[i for i in range(concept_idx-1,concept_idx+1)]
+        concepts=concepts[concept_idx-20:concept_idx+10],
+        concept_idxs=[i for i in range(concept_idx-20,concept_idx+10)]
     )
     
     print('metric_of_metrics:\n',metric_of_metrics)

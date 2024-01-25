@@ -207,19 +207,24 @@ class BaseEvaluator(metaclass=ABCMeta):
         return top_logits, most_preferred_tokens, topk_indices.detach().cpu().numpy()
     
     def get_silhouette_score(self, token_indices):
+        token_indices = np.unique(token_indices)
         X = self.model.embed.W_E.detach().cpu().numpy()[token_indices]
-        N_clusters = range(2, 6)
-        best_num = 0
-        best_score = 0
-        for num in N_clusters:
-            kmeans_model = KMeans(n_clusters=num, random_state=0, n_init='auto').fit(X)
-            labels = kmeans_model.labels_
-            silhouette_score = metrics.silhouette_score(X, labels)
-            logger.info('Number of clusters: {}, silhouette score: {:.4f}'.format(
-                num, silhouette_score))
-            if silhouette_score > best_score:
-                best_score = silhouette_score
-                best_num = num
+        if X.shape[0] <= 2:
+            best_num = X.shape[0]
+            best_score = 2. - X.shape[0]
+        else:
+            N_clusters = range(2, min(6, X.shape[0]))
+            best_num = 0
+            best_score = -2.
+            for num in N_clusters:
+                kmeans_model = KMeans(n_clusters=num, random_state=0, n_init='auto').fit(X)
+                labels = kmeans_model.labels_
+                silhouette_score = metrics.silhouette_score(X, labels)
+                logger.info('Number of clusters: {}, silhouette score: {:.4f}'.format(
+                    num, silhouette_score))
+                if silhouette_score > best_score:
+                    best_score = silhouette_score
+                    best_num = num
         logger.info('Best number of clusters: {}, best silhouette score: {:.4f}'.format(best_num, best_score))
         return best_num, best_score
     
@@ -292,7 +297,7 @@ class BaseEvaluator(metaclass=ABCMeta):
         df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx_x']][:10]
         print('df_final:\n', df_final)
         max_value = df_final['imp'].values.max()
-        df_final = df_final[df_final['imp']>=max_value*0.75]
+        df_final = df_final[df_final['imp']>=max_value*0.6]
         df_most_critical_tokens = df_final['token'].apply(lambda x:x.strip().lower()).values
         df_most_critical_token_idxs = df_final['token_idx_x']
         most_critical_token_idxs = df_most_critical_token_idxs[df_most_critical_tokens != '']

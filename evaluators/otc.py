@@ -25,6 +25,11 @@ class OutputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
     def code(cls):
         return 'otc'
     
+    def update_pmi_type(self, pmi_type):
+        if pmi_type not in ['uci', 'umass', 'silhouette']:
+            assert False, "PMI type not supported yet. please choose from: ['uci', 'umass', 'silhouette']."
+        self.pmi_type = pmi_type
+    
     def update_concept(self, concept=None, concept_idx=-1):
         self.concept = concept
         self.concept_idx = concept_idx

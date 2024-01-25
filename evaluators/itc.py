@@ -29,9 +29,18 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
     def update_concept(self, concept=None, concept_idx=-1):
         self.concept = concept
         self.concept_idx = concept_idx
+        
+    def update_pmi_type(self, pmi_type):
+        if pmi_type not in ['uci', 'umass', 'silhouette']:
+            assert False, "PMI type not supported yet. please choose from: ['uci', 'umass', 'silhouette']."
+        self.pmi_type = pmi_type
+        
     
     def get_metric(self, eval_tokens):
         most_critical_tokens, most_critical_token_idxs = self.get_most_critical_tokens(eval_tokens, self.concept, self.concept_idx)
+        if most_critical_tokens.shape[0] == 1:
+            most_critical_tokens = np.repeat(most_critical_tokens, 2)
+            most_critical_token_idxs = np.repeat(most_critical_token_idxs, 2)
         sentences = np.array(self.model.to_string(eval_tokens[:,1:]))
         inclusion = torch.tensor([[token in sentence.lower() for sentence in sentences] for token in most_critical_tokens]).to(int)
         epsilon=1e-10
@@ -49,9 +58,10 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
             final_pmi = (pmis * mask).sum() / mask.sum()
         elif self.pmi_type == 'silhouette':
             best_num, best_score = self.get_silhouette_score(np.array(most_critical_token_idxs))
-            final_pmi = best_score / best_num
+            final_pmi = best_score
         else:
             assert False, "PMI type not supported yet. please choose from: ['uci', 'umass', 'silhouette']."
+        
         logger.info('Input Topic Coherence Metric ({}): {:.4f}'.format(self.pmi_type, final_pmi))    
         return final_pmi
         

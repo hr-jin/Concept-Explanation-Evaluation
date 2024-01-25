@@ -158,6 +158,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         logger.info('weighted avg by concept activation: {:4E}'.format(weighted_metric))    
         logger.info('weighted sum by 1-normed concept activation: {:4E}'.format(weighted_normed_metric))  
         logger.info('weighted sum by softmaxed concept activation: {:4E}'.format(weighted_softmax_metric))      
+        logger.info('(avg where concept activation > 0.9 max) - (avg where concept activation > 0): {:4E}'.format(pos_act_metric_09max - pos_act_metric))   
         
         if self.return_type == 'avg_0max':
             return pos_act_metric

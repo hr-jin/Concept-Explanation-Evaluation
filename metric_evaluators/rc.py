@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from logger import logger
 from audtorch.metrics.functional import pearsonr
-
+import torch.nn.functional as F
 
 class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
     def __init__(self, cfg):
@@ -44,30 +44,16 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
             metric_list.append(tmp_metric_list)
         separate_metrics = torch.tensor(metric_list) # n_minibatch, n_metrics, n_concepts
         separate_metrics = separate_metrics.permute(1,0,2) # n_metrics, n_minibatch, n_concepts
-        separate_vars_agg = torch.var(separate_metrics, dim=-1).sum(-1) # n_metrics
+        separate_vars_agg = torch.var(separate_metrics, dim=-1)
+        print('separate_vars:\n',separate_vars_agg)
+        separate_vars_agg = separate_vars_agg.sum(-1) # n_metrics
         integral_vars = torch.var(separate_metrics.sum(1), dim=-1) # n_metrics
         
-        # metric_list = []
-        # logger.info('Metric evaluation on total dataset...\n')
-        # for name, evaluator in evaluator_dict.items():  
-        #     logger.info('Evaluating {} ...'.format(name))
-        #     concept_metric_list = []
-        #     for j, concept_idx in enumerate(concept_idxs):
-        #         concept = concepts[j]
-        #         evaluator.update_concept(concept, concept_idx) 
-        #         concept_metric = evaluator.get_metric(origin_tokens)
-        #         concept_metric_list.append(concept_metric)
-        #     metric_list.append(concept_metric_list)
-        # integral_metrics = torch.tensor(metric_list) # n_metrics, n_concepts
-        # integral_vars = torch.var(integral_metrics, dim=-1) # n_metrics
         J = separate_metrics.shape[1] 
         final_metrics = J / (J - 1) * (integral_vars - separate_vars_agg) / integral_vars # n_metrics
         print('J:', J)
-        print('minibatch_vars_agg:', separate_vars_agg)
+        print('separate_vars_agg:', separate_vars_agg)
         print('integral_vars:', integral_vars)
-        print('final_metrics.shape:', final_metrics.shape)
-        print('separate_vars_agg.shape:', separate_vars_agg.shape)
-        print('total_vars.shape:', integral_vars.shape)
         logger.info('Metric Consistency: \n{}'.format(
             ' '.join(
                 ['{}:{:4f}'.format(evaluator_names[i],final_metrics[i]) for i in range(final_metrics.shape[0])]
