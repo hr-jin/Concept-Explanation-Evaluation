@@ -38,6 +38,8 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
     
     def get_metric(self, eval_tokens):
         most_critical_tokens, most_critical_token_idxs = self.get_most_critical_tokens(eval_tokens, self.concept, self.concept_idx)
+        most_critical_token_idxs = most_critical_token_idxs[most_critical_tokens != '\ufffd']
+        most_critical_tokens = most_critical_tokens[most_critical_tokens != '\ufffd']
         if most_critical_tokens.shape[0] == 1:
             most_critical_tokens = np.repeat(most_critical_tokens, 2)
             most_critical_token_idxs = np.repeat(most_critical_token_idxs, 2)

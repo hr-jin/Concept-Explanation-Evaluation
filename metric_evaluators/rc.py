@@ -44,6 +44,7 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
             metric_list.append(tmp_metric_list)
         separate_metrics = torch.tensor(metric_list) # n_minibatch, n_metrics, n_concepts
         separate_metrics = separate_metrics.permute(1,0,2) # n_metrics, n_minibatch, n_concepts
+        print('separate_metrics:\n',separate_metrics)
         separate_vars_agg = torch.var(separate_metrics, dim=-1)
         print('separate_vars:\n',separate_vars_agg)
         separate_vars_agg = separate_vars_agg.sum(-1) # n_metrics

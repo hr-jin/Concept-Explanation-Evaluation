@@ -1,5 +1,6 @@
 from .base import BaseExtractor
 from functools import partial
+from collections import OrderedDict
 
 import torch
 import torch.nn as nn
@@ -96,7 +97,12 @@ class AutoEncoder(nn.Module, BaseExtractor):
             path = cfg['load_path']
         pprint.pprint(cfg)
         self = cls(cfg=cfg, dataloader=dataloader)
-        self.load_state_dict(torch.load(path + ".pt"))
+        state_dict = torch.load(path + ".pt")
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            if 'model' not in k:
+                new_state_dict[k] = v 
+        self.load_state_dict(new_state_dict)
         return self
     
     def get_activations(self, x, concept_idx):

@@ -119,7 +119,6 @@ class BaseEvaluator(metaclass=ABCMeta):
             tokens, 
             return_type='loss', 
             incl_bwd=True, 
-            loss_per_token=True,
             names_filter=self.cfg["act_name"]
         )
         grad = cache[self.cfg['act_name']+'_grad'].cpu().numpy()
@@ -173,8 +172,8 @@ class BaseEvaluator(metaclass=ABCMeta):
         
         if corr_func == 'cosine':
             corr = torch.cosine_similarity(
-                origin_values.detach(), 
-                disturbed_values.detach(), 
+                torch.softmax(origin_values, dim=-1).detach(), 
+                torch.softmax(disturbed_values, dim=-1).detach(), 
                 dim=-1
             )
         elif corr_func == 'KL_div':
@@ -182,7 +181,9 @@ class BaseEvaluator(metaclass=ABCMeta):
             origin_softmax = torch.softmax(origin_values, dim=-1) + 1e-10
             corr = F.kl_div(distributed_softmax.log(), origin_softmax, reduction='none').sum(-1)
         elif corr_func == 'openai_var':
-            corr = 1 - (disturbed_values - origin_values).square().mean(-1) / torch.var(origin_values, dim=-1)
+            distributed_softmax = torch.softmax(disturbed_values, dim=-1)
+            origin_softmax = torch.softmax(origin_values, dim=-1)
+            corr = 1 - (distributed_softmax - origin_softmax).square().mean(-1) / torch.var(origin_softmax, dim=-1)
         else:
             assert False, "Correlation type not supported yet. please choose from: ['cosine', 'KL_div', 'openai_var']."
         return corr.cpu().numpy()
@@ -207,11 +208,12 @@ class BaseEvaluator(metaclass=ABCMeta):
         return top_logits, most_preferred_tokens, topk_indices.detach().cpu().numpy()
     
     def get_silhouette_score(self, token_indices):
-        token_indices = np.unique(token_indices)
+        token_indices_unique = np.unique(token_indices)
         X = self.model.embed.W_E.detach().cpu().numpy()[token_indices]
-        if X.shape[0] <= 2:
-            best_num = X.shape[0]
-            best_score = 2. - X.shape[0]
+        X_unique = self.model.embed.W_E.detach().cpu().numpy()[token_indices_unique]
+        if X_unique.shape[0] <= 2:
+            best_num = X_unique.shape[0]
+            best_score = 2. - X_unique.shape[0]
         else:
             N_clusters = range(2, min(6, X.shape[0]))
             best_num = 0
@@ -294,8 +296,9 @@ class BaseEvaluator(metaclass=ABCMeta):
             results.append(result)
             
         
-        df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx_x']][:10]
-        print('df_final:\n', df_final)
+        df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx_x']]
+        print('df_final:\n', df_final[:10])
+        df_final = df_final[:5]
         max_value = df_final['imp'].values.max()
         df_final = df_final[df_final['imp']>=max_value*0.6]
         df_most_critical_tokens = df_final['token'].apply(lambda x:x.strip().lower()).values

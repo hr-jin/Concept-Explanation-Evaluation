@@ -129,8 +129,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         concept_acts = np.concatenate(concept_acts, axis=0)
         metrics = np.concatenate(metrics, axis=0)
         
-        if (self.disturb in ['ablation', 'replace']) and (self.measure_obj in ['loss']):
-            concept_acts = concept_acts[:,:-1]
+        concept_acts = concept_acts[:,:metrics.shape[1]]
         
         pos_act_metric = metrics[concept_acts>0].mean()
         
@@ -158,6 +157,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         logger.info('weighted avg by concept activation: {:4E}'.format(weighted_metric))    
         logger.info('weighted sum by 1-normed concept activation: {:4E}'.format(weighted_normed_metric))  
         logger.info('weighted sum by softmaxed concept activation: {:4E}'.format(weighted_softmax_metric))      
+        logger.info('(avg where concept activation > 0.8 max) - (avg where concept activation > 0): {:4E}'.format(pos_act_metric_08max - pos_act_metric))  
         logger.info('(avg where concept activation > 0.9 max) - (avg where concept activation > 0): {:4E}'.format(pos_act_metric_09max - pos_act_metric))   
         
         if self.return_type == 'avg_0max':
@@ -172,9 +172,11 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
             return weighted_normed_metric
         elif self.return_type == 'weighted_softmax':
             return weighted_softmax_metric
+        elif self.return_type == '08max-0max':
+            return pos_act_metric_09max - pos_act_metric
         elif self.return_type == '09max-0max':
             return pos_act_metric_09max - pos_act_metric
         else:
-            assert False, "return_type must be one of ['avg_0max', 'avg_08max','avg_09max','weighted','weighted_normed','weighted_softmax','09max-0max']"
+            assert False, "return_type must be one of ['avg_0max', 'avg_08max','avg_09max','weighted','weighted_normed','weighted_softmax','08max-0max','09max-0max']"
         
             
