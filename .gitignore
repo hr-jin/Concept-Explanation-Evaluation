@@ -1,2 +1,8 @@
 .vscode/
 *__pycache__/
+logs/
+__pycache__/
+data/output/
+configs/
+run.sh
+*.npy
