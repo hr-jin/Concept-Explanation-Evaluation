@@ -16,7 +16,7 @@ class Pythia70M(BaseModel):
         model_path = self.cfg['model_dir']
         device = self.cfg['device']
         if model_path != '':
-            model = HookedTransformer.from_pretrained(model_path).to(device)
+            model = HookedTransformer.from_pretrained(model_name, cache_dir=model_path).to(device)
         else:
             model = HookedTransformer.from_pretrained(model_name).to(device)
         self.model = model
