@@ -61,7 +61,7 @@ class OutputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         #     assert False, "PMI type not supported yet. please choose from: ['uci', 'umass', 'silhouette']."
         if self.pmi_type == 'silhouette':
             best_num, best_score = self.get_silhouette_score(topk_indices)
-            final_pmi = best_score
+            final_pmi = best_score / best_num
         else:
             assert False, "PMI type not supported yet. please choose from: ['silhouette']."
         logger.info('Output Topic Coherence Metric ({}): {:.4f}'.format(self.pmi_type, final_pmi))    
