@@ -227,7 +227,7 @@ class AutoEncoder(nn.Module, BaseExtractor):
             l0_norm = sum(l0_norms) / len(l0_norms)
             return l0_norm
         
-    @torch.no_grad
+    @torch.no_grad()
     def activation_func(self, tokens, model, concept=None, concept_idx=None):
         _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
         hidden_states = cache[self.cfg["act_name"]]
