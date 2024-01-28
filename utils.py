@@ -42,7 +42,7 @@ def run_with_cache_onesentence(
         model_out = model(*model_args, **model_kwargs)
         last_token_logit = model_out[:, seq_len-1, :]
         if incl_bwd:
-            last_token_logit[0, logit_token_idx].backward()
+            last_token_logit.squeeze()[logit_token_idx].backward()
 
     return model_out, cache_dict
     
@@ -135,7 +135,7 @@ def arg_parse_update_cfg(default_cfg, parser):
     cfg = dict(default_cfg)
     for key, value in default_cfg.items():
         if key == 'extractor':
-            parser.add_argument(f"--{key}", choices=["ae", "tcav"], default="ae")
+            parser.add_argument(f"--{key}", choices=["ae", "tcav", "spine"], default="ae")
         elif key == 'model_to_interpret':
             parser.add_argument(f"--{key}", choices=["llama-2-7b-chat", "pythia-70m"], default="pythia-70m")
         elif type(value) == bool:

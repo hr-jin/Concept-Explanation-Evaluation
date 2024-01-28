@@ -1,9 +1,13 @@
-from .eva1 import Evaluator1
+from .itc import InputTopicCoherenceEvaluator
+from .otc import OutputTopicCoherenceEvaluator
+from .faithfulness import FaithfulnessEvaluator
 
 EVALUATORS = {
-    Evaluator1.code(): Evaluator1,
+    InputTopicCoherenceEvaluator.code(): InputTopicCoherenceEvaluator,
+    OutputTopicCoherenceEvaluator.code(): OutputTopicCoherenceEvaluator,
+    FaithfulnessEvaluator.code(): FaithfulnessEvaluator,
 }
 
-def evaluator_factory(cfg, activation_func, model):
+def evaluator_factory(cfg, activation_func, model, **kwargs):
     evaluator = EVALUATORS[cfg['evaluator']]
-    return evaluator(cfg, activation_func, model)
+    return evaluator(cfg, activation_func, model, **kwargs)

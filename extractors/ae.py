@@ -1,5 +1,6 @@
 from .base import BaseExtractor
 from functools import partial
+from collections import OrderedDict
 
 import torch
 import torch.nn as nn
@@ -43,13 +44,10 @@ class AutoEncoder(nn.Module, BaseExtractor):
         
     def forward(self, x):
         x_cent = x - self.b_dec
-        # print('x_cent:', x_cent[0])
         if self.cfg['tied_enc_dec'] == 1:
             acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
         else:
             acts = F.relu(x_cent @ self.W_enc + self.b_enc)
-            # print('x_cent @ self.W_enc:', x_cent @ self.W_enc)
-            # print('self.b_enc:', self.b_enc)
         
         x_reconstruct = acts @ self.W_dec + self.b_dec
         return x_reconstruct, acts
@@ -99,17 +97,22 @@ class AutoEncoder(nn.Module, BaseExtractor):
             path = cfg['load_path']
         pprint.pprint(cfg)
         self = cls(cfg=cfg, dataloader=dataloader)
-        self.load_state_dict(torch.load(path + ".pt"))
+        state_dict = torch.load(path + ".pt")
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            if 'model' not in k:
+                new_state_dict[k] = v 
+        self.load_state_dict(new_state_dict)
         return self
     
-    def get_activations(self, x, concept_idx):
-        with torch.no_grad():
-            x_cent = x - self.b_dec
-            if self.cfg['tied_enc_dec'] == 1:
-                acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
-            else:
-                acts = F.relu(x_cent @ self.W_enc + self.b_enc)
-            return acts[:, concept_idx]
+    # def get_activations(self, x, concept_idx):
+    #     with torch.no_grad():
+    #         x_cent = x - self.b_dec
+    #         if self.cfg['tied_enc_dec'] == 1:
+    #             acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
+    #         else:
+    #             acts = F.relu(x_cent @ self.W_enc + self.b_enc)
+    #         return acts[:, concept_idx]
 
     def extract_concepts(self, model):
         """
@@ -224,7 +227,7 @@ class AutoEncoder(nn.Module, BaseExtractor):
             l0_norm = sum(l0_norms) / len(l0_norms)
             return l0_norm
         
-    @torch.no_grad
+    @torch.no_grad()
     def activation_func(self, tokens, model, concept=None, concept_idx=None):
         _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
         hidden_states = cache[self.cfg["act_name"]]

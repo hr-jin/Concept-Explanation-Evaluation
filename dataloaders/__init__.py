@@ -3,6 +3,7 @@ from .ae import AEDataloader
 
 
 DATALOADERS = {
+    "spine": AEDataloader,
     AEDataloader.code(): AEDataloader,
     TCAVDataloader.code(): TCAVDataloader
 }
