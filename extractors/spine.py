@@ -12,6 +12,7 @@ import os
 import time
 from sklearn.datasets import make_blobs
 import numpy as np
+from tqdm import tqdm
 
 
 class SPINEModel(nn.Module):
@@ -118,7 +119,7 @@ class SpineExtractor(nn.Module, BaseExtractor):
                 "psl_loss": [],
                 "asl_loss": [],
             }
-            for iter in range(len(self.dataloader)):
+            for iter in tqdm(range(len(self.dataloader))):
                 # get batch
                 activations = self.dataloader.next()
                 if self.dataloader.empty_flag == 1:
@@ -146,10 +147,10 @@ class SpineExtractor(nn.Module, BaseExtractor):
                 # log outputs and save best model
                 if (iter+1) % log_freq == 0:
                     logger.info('iter:{}'.format(iter + 1))
-                    logger.info('total_loss:{}'.format(loss.item() / log_freq))
-                    logger.info('recons_loss:{}'.format(recons_loss.item() / log_freq))
-                    logger.info('psl_loss:{}'.format(psl_loss.item() / log_freq))
-                    logger.info('asl_loss:{}'.format(asl_loss.item() / log_freq))
+                    logger.info('total_loss:{}'.format(sum(loss_dict["total_loss"]) / log_freq))
+                    logger.info('recons_loss:{}'.format(sum(loss_dict["recons_loss"]) / log_freq))
+                    logger.info('psl_loss:{}'.format(sum(loss_dict["psl_loss"]) / log_freq))
+                    logger.info('asl_loss:{}'.format(sum(loss_dict["asl_loss"]) / log_freq))
                     loss_dict = {
                         "total_loss": [],
                         "recons_loss": [],

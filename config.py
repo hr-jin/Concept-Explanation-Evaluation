@@ -70,4 +70,8 @@ cfg = {
         "noise_level":0.2,
         "sparsity":0.85,
         
+        ##
+        "freq_sample_range": int(1e5),
+        "reg": 0.3,
+        
     }
