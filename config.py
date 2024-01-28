@@ -66,4 +66,8 @@ cfg = {
         "beta2": 0.99,
         "lr": 0.001,
         
+        ## spine
+        "noise_level":0.2,
+        "sparsity":0.85,
+        
     }

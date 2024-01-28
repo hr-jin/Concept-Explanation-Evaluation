@@ -27,7 +27,7 @@ class BaseEvaluator(metaclass=ABCMeta):
     def code(cls):
         pass
     
-    @torch.no_grad
+    @torch.no_grad()
     def get_hidden_states(
         self, 
         tokens
