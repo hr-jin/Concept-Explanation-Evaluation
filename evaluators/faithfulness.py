@@ -19,7 +19,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         corr_func='cosine', 
         class_idx=0, 
         logits_corr_topk=None,
-        return_type='09max-0min', 
+        return_type='00max-0min', 
     ):
         nn.Module.__init__(self)
         BaseEvaluator.__init__(self, cfg, activation_func, model)
