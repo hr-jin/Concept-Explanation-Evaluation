@@ -34,11 +34,11 @@ class TCAVExtractor(nn.Module, BaseExtractor):
             concept_repres = concept_repres[np.arange(concept_repres.shape[0]),(inputs['attention_mask'].sum(-1)-1),:]
         return concept_repres
     
-    def get_activations(self, x, concept_idx):
+    def activation_func(self, tokens, model, concept, concept_idx):
         with torch.no_grad():
-            return self.classifier.predict(x)
+            return self.classifier.predict(tokens)
    
-    def extract_concepts(self):
+    def extract_concepts(self, model):
         pos_examples, neg_examples, pos_labels, neg_labels = self.dataloader.next()
         reps = self.get_reps(pos_examples + neg_examples)
         

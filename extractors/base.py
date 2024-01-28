@@ -10,6 +10,6 @@ class BaseExtractor(metaclass=ABCMeta):
         pass
     
     @abstractclassmethod
-    def get_activations():
+    def activation_func():
         pass
 

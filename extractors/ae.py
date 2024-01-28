@@ -105,14 +105,14 @@ class AutoEncoder(nn.Module, BaseExtractor):
         self.load_state_dict(new_state_dict)
         return self
     
-    def get_activations(self, x, concept_idx):
-        with torch.no_grad():
-            x_cent = x - self.b_dec
-            if self.cfg['tied_enc_dec'] == 1:
-                acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
-            else:
-                acts = F.relu(x_cent @ self.W_enc + self.b_enc)
-            return acts[:, concept_idx]
+    # def get_activations(self, x, concept_idx):
+    #     with torch.no_grad():
+    #         x_cent = x - self.b_dec
+    #         if self.cfg['tied_enc_dec'] == 1:
+    #             acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
+    #         else:
+    #             acts = F.relu(x_cent @ self.W_enc + self.b_enc)
+    #         return acts[:, concept_idx]
 
     def extract_concepts(self, model):
         """
