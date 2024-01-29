@@ -37,7 +37,7 @@ class IntrinsicProbingExtractor(nn.Module, BaseExtractor):
     
     @classmethod
     def code(cls):
-        return 'Intrinsic Probing'
+        return 'intr_prob'
     
     def activation_func(self, x, concept_idx):
         NotImplemented

@@ -33,6 +33,7 @@ class ConvexOptimDataloader(AbstractDataloader):
     Add word frequency targeted for convex optimation baseline
     """
     def __init__(self, cfg, data, model):
+        
         super().__init__()
         self.cfg = cfg
         self.buffer = torch.zeros((cfg["buffer_size"], cfg["act_size"]), dtype=torch.float16, requires_grad=False)
@@ -43,12 +44,15 @@ class ConvexOptimDataloader(AbstractDataloader):
         
         occurence_tensor = torch.tensor(data[:cfg["freq_sample_range"]]['tokens'])
         occurence_tensor = occurence_tensor[:, :self.cfg['seq_len']]
+        logger.info('initializing...')
         self.counts_dict = count_occurrences(occurence_tensor)
         del occurence_tensor
+        logger.info('initializing...')
         
         self.model = model
         self.tokenizer = model.tokenizer
         self.empty_flag = 0
+        logger.info('initializing...')
         self.refresh()
         
         

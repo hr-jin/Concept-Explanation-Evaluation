@@ -12,6 +12,7 @@ DATALOADERS = {
 
 
 def dataloader_factory(cfg, data, model):
+    
     dataloader = DATALOADERS[cfg['extractor']]
     train_dataloader = dataloader(cfg, data, model)
     return train_dataloader

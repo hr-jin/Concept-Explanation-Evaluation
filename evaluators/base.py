@@ -186,6 +186,38 @@ class BaseEvaluator(metaclass=ABCMeta):
         hidden_state = np.array(hidden_states)[:,0,:,:]
         return grad, hidden_state
     
+    def get_topic_coherence(self, eval_tokens, most_critical_tokens):
+        sentences = np.array(self.model.to_string(eval_tokens[:,1:]))
+        inclusion = torch.tensor([[token in sentence.lower() for sentence in sentences] for token in most_critical_tokens]).to(int)
+        epsilon=1e-10
+        corpus_len = sentences.shape[0]
+        binary_inclusion = inclusion @ inclusion.T / corpus_len
+        token_inclusion = inclusion.sum(-1) / corpus_len
+        if self.pmi_type == 'uci':  
+            token_inclusion_mult = token_inclusion.unsqueeze(0).T @ token_inclusion.unsqueeze(0)
+            pmis = torch.log((binary_inclusion + epsilon) / token_inclusion_mult)
+            mask = torch.triu(torch.ones_like(pmis),diagonal=1)
+            topic_coherence = (pmis * mask).sum() / mask.sum()
+        elif self.pmi_type == 'umass':  
+            pmis = torch.log((binary_inclusion + epsilon) / token_inclusion)
+            mask = torch.triu(torch.ones_like(pmis),diagonal=1)
+            topic_coherence = (pmis * mask).sum() / mask.sum()
+        return topic_coherence
+    
+    def get_emb_topic_coherence(self, most_critical_token_idxs):
+        X = self.model.embed.W_E.detach().cpu()[most_critical_token_idxs]
+        if self.pmi_type == 'emb_dist':  
+            pmis = torch.tensor([[(emb1 - emb2).square().sum(-1).sqrt() for emb2 in X] for emb1 in X])
+            mask = torch.triu(torch.ones_like(pmis),diagonal=1)
+            topic_coherence = (pmis * mask).sum() / mask.sum()
+        elif self.pmi_type == 'emb_cos':  
+            X_normed = X / X.square().sum(-1).sqrt().unsqueeze(1)
+            pmis = X_normed @ X_normed.T
+            mask = torch.triu(torch.ones_like(pmis),diagonal=1)
+            topic_coherence = (pmis * mask).sum() / mask.sum()
+        return topic_coherence
+        
+    
     def get_logit_distribution_corr(
         self, 
         tokens, 
@@ -224,7 +256,7 @@ class BaseEvaluator(metaclass=ABCMeta):
                 dim=-1
             )
         elif corr_func == 'KL_div':
-            corr = F.kl_div(distributed_softmax.log(), origin_softmax, reduction='none').sum(-1)
+            corr = -F.kl_div(distributed_softmax.log(), origin_softmax, reduction='none').sum(-1)
         elif corr_func == 'openai_var':
             corr = 1 - (distributed_softmax - origin_softmax).square().mean(-1) / torch.var(origin_softmax, dim=-1)
         else:

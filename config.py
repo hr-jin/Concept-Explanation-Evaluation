@@ -72,7 +72,7 @@ cfg = {
         "sparsity":0.85,
         
         ## convex optim
-        "freq_sample_range": int(1e6),
+        "freq_sample_range": int(1e2),
         "reg": 0.3,
         
         ## intrinsic probing

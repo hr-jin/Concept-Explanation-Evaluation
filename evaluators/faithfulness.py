@@ -68,7 +68,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                     assert False, "When the disturbance type is 'gradient', the measurement object must be one of ['loss', 'class_logit']."
                 elif self.measure_obj == 'loss':
                     grads, hidden_state = self.get_loss_gradient(tokens)
-                    metric = (grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
+                    metric = -(grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
                 elif self.measure_obj == 'class_logit':
                     grads, hidden_state = self.get_class_logit_gradient(tokens, self.class_idx)
                     metric = (grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
@@ -89,7 +89,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                             corr_func=self.corr_func,
                         ) # minibatch * maxlen
                     elif self.measure_obj == 'loss':
-                        metric = self.get_loss_diff(
+                        metric = -self.get_loss_diff(
                             tokens, 
                             concept=self.concept,
                             hook=self.ablation_hook,
@@ -113,7 +113,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                             corr_func=self.corr_func,
                         )
                     elif self.measure_obj == 'loss':
-                        metric = self.get_loss_diff(
+                        metric = -self.get_loss_diff(
                             tokens, 
                             concept=self.concept,
                             hook=self.replacement_hook,
@@ -144,12 +144,12 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                             corr_func=self.corr_func,
                         )
                     elif self.measure_obj == 'loss':
-                        abl_metric = self.get_loss_diff(
+                        abl_metric = -self.get_loss_diff(
                             tokens, 
                             concept=self.concept,
                             hook=self.ablation_hook,
                         ) # minibatch * (maxlen-1)
-                        rep_metric = self.get_loss_diff(
+                        rep_metric = -self.get_loss_diff(
                             tokens, 
                             concept=self.concept,
                             hook=self.replacement_hook,
