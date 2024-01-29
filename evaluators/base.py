@@ -44,20 +44,48 @@ class BaseEvaluator(metaclass=ABCMeta):
     def update_concept(self):
         pass
     
+    # @staticmethod
+    # def ablation_hook(
+    #     hidden_states, 
+    #     hook, 
+    #     concept, 
+    #     concept_acts=None
+    # ):
+    #     if concept_acts == None:
+    #         concept_normed = concept / concept.norm(dim=-1, keepdim=True)
+    #         hidden_states_proj = (hidden_states * concept_normed).sum(-1).unsqueeze(-1) * concept_normed
+    #         hidden_states_ortho = hidden_states - hidden_states_proj
+    #         output = hidden_states_ortho / hidden_states_ortho.norm(dim=-1, keepdim=True) * hidden_states.norm(dim=-1, keepdim=True)
+    #     else:
+    #         output = hidden_states - concept_acts.unsqueeze(0).unsqueeze(0) * concept_acts.unsqueeze(0)
+    #     return output
+    
+    # @staticmethod
+    # def replacement_hook(
+    #     hidden_states, 
+    #     hook, 
+    #     concept, 
+    #     concept_acts=None
+    # ):
+    #     f_norm = hidden_states.norm(dim=-1, keepdim=True)
+    #     concept_renormed = concept / concept.norm(dim=-1, keepdim=True)
+    #     output = concept_renormed.unsqueeze(0).unsqueeze(0) * f_norm
+    #     return output
+    
     @staticmethod
     def ablation_hook(
         hidden_states, 
         hook, 
         concept, 
-        concept_acts=None
     ):
-        if concept_acts == None:
-            concept_normed = concept / concept.norm(dim=-1, keepdim=True)
-            hidden_states_proj = (hidden_states * concept_normed).sum(-1).unsqueeze(-1) * concept_normed
-            hidden_states_ortho = hidden_states - hidden_states_proj
-            output = hidden_states_ortho / hidden_states_ortho.norm(dim=-1, keepdim=True) * hidden_states.norm(dim=-1, keepdim=True)
-        else:
-            output = hidden_states - concept_acts.unsqueeze(0).unsqueeze(0) * concept_acts.unsqueeze(0)
+        origin_mean = hidden_states.mean(dim=-1, keepdim=True)
+        origin_std = hidden_states.std(dim=-1, keepdim=True)
+        concept_normed = concept / concept.norm(dim=-1, keepdim=True)
+        hidden_states_proj = (hidden_states * concept_normed).sum(-1).unsqueeze(-1) * concept_normed
+        hidden_states_ortho = hidden_states - hidden_states_proj
+        output = (hidden_states_ortho - hidden_states_ortho.mean(dim=-1, keepdim=True)) / hidden_states_ortho.std(dim=-1, keepdim=True)
+        output = output * origin_std + origin_mean
+
         return output
     
     @staticmethod
@@ -65,11 +93,11 @@ class BaseEvaluator(metaclass=ABCMeta):
         hidden_states, 
         hook, 
         concept, 
-        concept_acts=None
     ):
-        f_norm = hidden_states.norm(dim=-1, keepdim=True)
-        concept_renormed = concept / concept.norm(dim=-1, keepdim=True)
-        output = concept_renormed.unsqueeze(0).unsqueeze(0) * f_norm
+        origin_mean = hidden_states.mean(dim=-1, keepdim=True)
+        origin_std = hidden_states.std(dim=-1, keepdim=True)
+        concept_renormed = (concept - concept.mean(dim=-1, keepdim=True)) / concept.std(dim=-1, keepdim=True)
+        output = concept_renormed * origin_std + origin_mean
         return output
     
     def get_loss_diff(
@@ -170,19 +198,17 @@ class BaseEvaluator(metaclass=ABCMeta):
             origin_values = origin_logits
             disturbed_values = disturbed_logits
         
+        distributed_softmax = torch.softmax(disturbed_values, dim=-1) + 1e-10
+        origin_softmax = torch.softmax(origin_values, dim=-1) + 1e-10
         if corr_func == 'cosine':
             corr = torch.cosine_similarity(
-                torch.softmax(origin_values, dim=-1).detach(), 
-                torch.softmax(disturbed_values, dim=-1).detach(), 
+                distributed_softmax - distributed_softmax.mean(-1, keepdim=True), 
+                origin_softmax - origin_softmax.mean(-1, keepdim=True), 
                 dim=-1
             )
         elif corr_func == 'KL_div':
-            distributed_softmax = torch.softmax(disturbed_values, dim=-1) + 1e-10
-            origin_softmax = torch.softmax(origin_values, dim=-1) + 1e-10
             corr = F.kl_div(distributed_softmax.log(), origin_softmax, reduction='none').sum(-1)
         elif corr_func == 'openai_var':
-            distributed_softmax = torch.softmax(disturbed_values, dim=-1)
-            origin_softmax = torch.softmax(origin_values, dim=-1)
             corr = 1 - (distributed_softmax - origin_softmax).square().mean(-1) / torch.var(origin_softmax, dim=-1)
         else:
             assert False, "Correlation type not supported yet. please choose from: ['cosine', 'KL_div', 'openai_var']."
@@ -300,7 +326,7 @@ class BaseEvaluator(metaclass=ABCMeta):
         print('df_final:\n', df_final[:10])
         df_final = df_final[:5]
         max_value = df_final['imp'].values.max()
-        df_final = df_final[df_final['imp']>=max_value*0.6]
+        df_final = df_final[df_final['imp']>=max_value*0.2]
         df_most_critical_tokens = df_final['token'].apply(lambda x:x.strip().lower()).values
         df_most_critical_token_idxs = df_final['token_idx_x']
         most_critical_token_idxs = df_most_critical_token_idxs[df_most_critical_tokens != '']

@@ -60,7 +60,7 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
             final_pmi = (pmis * mask).sum() / mask.sum()
         elif self.pmi_type == 'silhouette':
             best_num, best_score = self.get_silhouette_score(np.array(most_critical_token_idxs))
-            final_pmi = best_score
+            final_pmi = best_score / best_num
         else:
             assert False, "PMI type not supported yet. please choose from: ['uci', 'umass', 'silhouette']."
         

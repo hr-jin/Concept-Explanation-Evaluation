@@ -41,13 +41,23 @@ def main():
     
     concepts = extractor.get_concepts()
     print('concept vectors:', concepts)
-    # print('concept vectors shape:', concepts.shape)
+    
+    # tcav_concepts = extractor.get_concepts()
+    # print('concept vectors:', tcav_concepts)
+    
+    # tcav_activation_func = extractor.activation_
+    
+    # cfg['data_dir'] = "/root/autodl-tmp/haoran/SparseAE-pythia-pile/data/pile_neel/"
+    # cfg['dataset_name'] = "pile-tokenized-10b"
+    # cfg['extractor'] = "ae"
+    # eval_data = dataset_factory(cfg)
+    # dataloader = dataloader_factory(cfg, eval_data, model)
     
     concept_idx = 2919
         
     
     token_list = []
-    for _ in range(5):
+    for _ in range(10):
         tokens = dataloader.get_processed_random_batch()
         token_list.append(tokens)
     tokens = torch.cat(token_list, 0)
@@ -61,7 +71,7 @@ def main():
     #             for corr_func in ['KL_div', 'cosine', 'openai_var']:
     #                 if disturb == 'gradient':
     #                     continue
-    #                 for topk in [ 20]:
+    #                 for topk in [1000]:
     #                     extractor_str = disturb + '_' + measure_obj + '_' + corr_func + '_top' + str(topk)
     #                     evaluator_dict[extractor_str] = evaluator_factory(
     #                     cfg, 
@@ -76,41 +86,41 @@ def main():
     #                     logits_corr_topk=topk,
     #                     )
     
-    # cfg['evaluator'] = 'faithfulness'
-    # for disturb in ['gradient', 'ablation', 'replace']:
-    #     for measure_obj in ['logits', 'loss']: # , 'class_logit'
-    #         if measure_obj == 'logits':
-    #             for corr_func in ['KL_div', 'cosine', 'openai_var']:
-    #                 if disturb == 'gradient':
-    #                     continue
-    #                 for topk in [10, 50]:
-    #                     extractor_str = disturb + '_' + measure_obj + '_' + corr_func + '_top' + str(topk)
-    #                     evaluator_dict[extractor_str] = evaluator_factory(
-    #                     cfg, 
-    #                     extractor.activation_func, 
-    #                     model,
-    #                     concept=concepts[concept_idx], 
-    #                     concept_idx=concept_idx, 
-    #                     disturb=disturb, # ['ablation', 'gradient', 'replace']
-    #                     measure_obj=measure_obj, # ['loss', 'class_logit', 'logits']
-    #                     corr_func=corr_func, # ['cosine', 'KL_div', 'openai_var']
-    #                     class_idx=7000, 
-    #                     logits_corr_topk=topk,
-    #                     )
-    #         else:
-    #             extractor_str = disturb + '_' + measure_obj
-    #             evaluator_dict[extractor_str] = evaluator_factory(
-    #                 cfg, 
-    #                 extractor.activation_func, 
-    #                 model,
-    #                 concept=concepts[concept_idx], 
-    #                 concept_idx=concept_idx, 
-    #                 disturb=disturb, # ['ablation', 'gradient', 'replace']
-    #                 measure_obj=measure_obj, # ['loss', 'class_logit', 'logits']
-    #                 corr_func=corr_func, # ['cosine', 'KL_div', 'openai_var']
-    #                 class_idx=7000, 
-    #                 logits_corr_topk=None,
-    #             )
+    cfg['evaluator'] = 'faithfulness'
+    for disturb in ['gradient', 'ablation', 'replace']:
+        for measure_obj in ['logits', 'loss']: # , 'class_logit'
+            if measure_obj == 'logits':
+                for corr_func in ['KL_div', 'cosine', 'openai_var']:
+                    if disturb == 'gradient':
+                        continue
+                    for topk in [10, 1000]:
+                        extractor_str = disturb + '_' + measure_obj + '_' + corr_func + '_top' + str(topk)
+                        evaluator_dict[extractor_str] = evaluator_factory(
+                        cfg, 
+                        extractor.activation_func, 
+                        model,
+                        concept=concepts[concept_idx], 
+                        concept_idx=concept_idx, 
+                        disturb=disturb, # ['ablation', 'gradient', 'replace']
+                        measure_obj=measure_obj, # ['loss', 'class_logit', 'logits']
+                        corr_func=corr_func, # ['cosine', 'KL_div', 'openai_var']
+                        class_idx=7000, 
+                        logits_corr_topk=topk,
+                        )
+            else:
+                extractor_str = disturb + '_' + measure_obj
+                evaluator_dict[extractor_str] = evaluator_factory(
+                    cfg, 
+                    extractor.activation_func, 
+                    model,
+                    concept=concepts[concept_idx], 
+                    concept_idx=concept_idx, 
+                    disturb=disturb, # ['ablation', 'gradient', 'replace']
+                    measure_obj=measure_obj, # ['loss', 'class_logit', 'logits']
+                    corr_func=corr_func, # ['cosine', 'KL_div', 'openai_var']
+                    class_idx=7000, 
+                    logits_corr_topk=None,
+                )
                     
                             
     cfg['evaluator'] = 'otc'
@@ -153,14 +163,12 @@ def main():
         ),
     })
     
-    
-    
     metric_evaluator = metric_evaluator_factory(cfg)
     metric_of_metrics = metric_evaluator.get_metric(
         tokens, 
         evaluator_dict, 
-        concepts=concepts[concept_idx-15:concept_idx+10],
-        concept_idxs=[i for i in range(concept_idx-15,concept_idx+10)]
+        concepts=concepts[concept_idx-20:concept_idx+10],
+        concept_idxs=[i for i in range(concept_idx-20,concept_idx+10)]
         # concepts=concepts[concept_idx-2:concept_idx+2],
         # concept_idxs=[i for i in range(concept_idx-2,concept_idx+2)]
     )

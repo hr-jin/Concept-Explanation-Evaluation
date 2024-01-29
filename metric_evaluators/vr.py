@@ -4,6 +4,8 @@ import torch.nn as nn
 from logger import logger
 from audtorch.metrics.functional import pearsonr
 import numpy as np
+import datetime
+
 
 class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
     def __init__(self, cfg):
@@ -52,8 +54,9 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         pearsonr_metrics = torch.tensor(pearsonr_list).cpu().numpy() # n_metrics * n_metrics
         cosine_sim_metrics = torch.tensor(cosine_sim_list).cpu().numpy() # n_metrics * n_metrics
         
-        np.save('pearsonr_metrics.npy',pearsonr_metrics)
-        np.save('cosine_sim_metrics.npy',cosine_sim_metrics)
+        dtime = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'pearsonr_metrics.npy',pearsonr_metrics)
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'cosine_sim_metrics.npy',cosine_sim_metrics)
         
         logger.info('Metrics: '.format(str(list(evaluator_dict.keys()))))
         logger.info('Metric Validity Relevance (cosine similarity): \n{}'.format(str(cosine_sim_metrics))) 

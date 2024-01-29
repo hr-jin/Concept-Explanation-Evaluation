@@ -19,7 +19,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         corr_func='cosine', 
         class_idx=0, 
         logits_corr_topk=None,
-        return_type='09max-0max', 
+        return_type='00max-0min', 
     ):
         nn.Module.__init__(self)
         BaseEvaluator.__init__(self, cfg, activation_func, model)
@@ -133,9 +133,21 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         
         pos_act_metric = metrics[concept_acts>0].mean()
         
+        pos_act_metric_0min = metrics[concept_acts<=0*concept_acts.max()].mean()
+        
+        pos_act_metric_02min = metrics[concept_acts<0.2*concept_acts.max()].mean()
+        
+        pos_act_metric_075max = metrics[concept_acts>0.75*concept_acts.max()].mean()
+        
+        pos_act_metric_05max = metrics[concept_acts>0.5*concept_acts.max()].mean()
+        
         pos_act_metric_08max = metrics[concept_acts>0.8*concept_acts.max()].mean()
         
         pos_act_metric_09max = metrics[concept_acts>0.9*concept_acts.max()].mean()
+        
+        pos_act_metric_02max = metrics[concept_acts>0.2*concept_acts.max()].mean()
+        
+        pos_act_metric_0max = metrics[concept_acts>0.0*concept_acts.max()].mean()
         
         weighted_metric = (metrics * concept_acts).mean()
     
@@ -159,6 +171,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         logger.info('weighted sum by softmaxed concept activation: {:4E}'.format(weighted_softmax_metric))      
         logger.info('(avg where concept activation > 0.8 max) - (avg where concept activation > 0): {:4E}'.format(pos_act_metric_08max - pos_act_metric))  
         logger.info('(avg where concept activation > 0.9 max) - (avg where concept activation > 0): {:4E}'.format(pos_act_metric_09max - pos_act_metric))   
+        logger.info('(avg where concept activation > 0.8 max) - (avg where concept activation < 0.2 min): {:4E}'.format(pos_act_metric_08max - pos_act_metric_02min))   
         
         if self.return_type == 'avg_0max':
             return pos_act_metric
@@ -176,7 +189,19 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
             return pos_act_metric_09max - pos_act_metric
         elif self.return_type == '09max-0max':
             return pos_act_metric_09max - pos_act_metric
+        elif self.return_type == '09max-0min':
+            return pos_act_metric_09max - pos_act_metric_0min
+        elif self.return_type == '09max-02min':
+            return pos_act_metric_09max - pos_act_metric_02min
+        elif self.return_type == '075max-0min':
+            return pos_act_metric_075max - pos_act_metric_0min
+        elif self.return_type == '05max-0min':
+            return pos_act_metric_05max - pos_act_metric_0min
+        elif self.return_type == '00max-0min':
+            return pos_act_metric_0max - pos_act_metric_0min
+        elif self.return_type == '02max-0min':
+            return pos_act_metric_02max - pos_act_metric_0min
         else:
-            assert False, "return_type must be one of ['avg_0max', 'avg_08max','avg_09max','weighted','weighted_normed','weighted_softmax','08max-0max','09max-0max']"
+            assert False, "return_type must be one of ['avg_0max', 'avg_08max','avg_09max','weighted','weighted_normed','weighted_softmax','08max-0max','09max-0max','09max-02min']"
         
             

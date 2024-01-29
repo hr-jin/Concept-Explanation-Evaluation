@@ -70,8 +70,18 @@ cfg = {
         "noise_level":0.2,
         "sparsity":0.85,
         
-        ##
+        ## convex optim
         "freq_sample_range": int(1e6),
         "reg": 0.3,
         
-    }
+        ## intrinsic probing
+        "language": "eng",
+        "embedding": "bert",     # bert/fasttext
+        "trainer": "map",        # map/mle
+        "attribute": None,
+        "diagonalize": False,
+        "max_iter": 5,
+        "show_charts":False,
+        "selection_criterion": "log_likelihood", # accuracy / log_likelihood / mi
+        'log_wandb': False, # to use wandb
+}
