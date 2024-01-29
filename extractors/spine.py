@@ -96,6 +96,7 @@ class SpineExtractor(nn.Module, BaseExtractor):
     
     @classmethod
     def load_from_file(cls, dataloader, save_dir=None, ckpt_name=None):
+
         """
         Loads the saved extractor from file.
         """
@@ -176,7 +177,7 @@ class SpineExtractor(nn.Module, BaseExtractor):
     
     
     def get_concepts(self):                   
-        return self.model.linear2.clone().detach()   
+        return self.model.linear2.weight.T.clone().detach()   
 
     
     @torch.no_grad()
