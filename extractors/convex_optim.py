@@ -93,12 +93,16 @@ class ConvexOptimExtractor(nn.Module, BaseExtractor):
                 json.dump(self.cfg, f)
     
     @classmethod
-    def load_from_file(cls, dataloader, save_dir=None):
+    def load_from_file(cls, dataloader, save_dir, ckpt_name=None):
         """
         Loads the saved extractor from file.
         """
-        cfg = json.load(open(os.path.join(save_dir, "cfg.json"), "r"))
-        state_dict = torch.load(os.path.join(save_dir, "model.pt"))
+        if ckpt_name is None:
+            cfg = json.load(open(os.path.join(save_dir, "cfg.json"), "r"))
+            state_dict = torch.load(os.path.join(save_dir, "model.pt"))
+        else:
+            cfg = json.load(open(os.path.join(save_dir, ckpt_name+".json"), "r"))
+            state_dict = torch.load(os.path.join(save_dir, ckpt_name+".pt"))
         self = cls(cfg, dataloader)
         self.load_state_dict(state_dict)
         return self

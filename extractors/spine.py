@@ -99,8 +99,12 @@ class SpineExtractor(nn.Module, BaseExtractor):
         """
         Loads the saved extractor from file.
         """
-        cfg = json.load(open(os.path.join(save_dir, "cfg.json"), "r"))
-        state_dict = torch.load(os.path.join(save_dir, "model.pt"))
+        if ckpt_name is None:
+            cfg = json.load(open(os.path.join(save_dir, "cfg.json"), "r"))
+            state_dict = torch.load(os.path.join(save_dir, "model.pt"))
+        else:
+            cfg = json.load(open(os.path.join(save_dir, ckpt_name+".json"), "r"))
+            state_dict = torch.load(os.path.join(save_dir, ckpt_name+".pt"))
         self = cls(cfg, dataloader)
         self.load_state_dict(state_dict)
         return self
