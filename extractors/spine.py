@@ -95,7 +95,8 @@ class SpineExtractor(nn.Module, BaseExtractor):
                 json.dump(self.cfg, f)
     
     @classmethod
-    def load_from_file(cls, dataloader, save_dir, ckpt_name=None):
+    def load_from_file(cls, dataloader, save_dir=None, ckpt_name=None):
+
         """
         Loads the saved extractor from file.
         """
@@ -151,10 +152,10 @@ class SpineExtractor(nn.Module, BaseExtractor):
                 # log outputs and save best model
                 if (iter+1) % log_freq == 0:
                     logger.info('iter:{}'.format(iter + 1))
-                    logger.info('total_loss:{}'.format(sum(loss_dict["total_loss"]) / log_freq))
-                    logger.info('recons_loss:{}'.format(sum(loss_dict["recons_loss"]) / log_freq))
-                    logger.info('psl_loss:{}'.format(sum(loss_dict["psl_loss"]) / log_freq))
-                    logger.info('asl_loss:{}'.format(sum(loss_dict["asl_loss"]) / log_freq))
+                    logger.info('total_loss:{:.4f}'.format(sum(loss_dict["total_loss"]) / log_freq))
+                    logger.info('recons_loss:{:.4f}'.format(sum(loss_dict["recons_loss"]) / log_freq))
+                    logger.info('psl_loss:{:.4f}'.format(sum(loss_dict["psl_loss"]) / log_freq))
+                    logger.info('asl_loss:{:.4f}'.format(sum(loss_dict["asl_loss"]) / log_freq))
                     loss_dict = {
                         "total_loss": [],
                         "recons_loss": [],
@@ -180,17 +181,15 @@ class SpineExtractor(nn.Module, BaseExtractor):
 
     
     @torch.no_grad()
-    def get_activations(self, x, concept_idx):
+    def activation_func(self, x, concept_idx):
         out, h, loss, loss_terms = self.model(x, x)
         return h[:, concept_idx]
 
 
-@staticmethod
 def replacement_hook(mlp_post, hook, encoder):
     mlp_post_reconstr = encoder(mlp_post, mlp_post)[0]
     return mlp_post_reconstr
 
-@staticmethod
 def zero_ablate_hook(mlp_post, hook):
     mlp_post[:] = 0.
     return mlp_post

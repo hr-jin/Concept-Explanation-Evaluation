@@ -26,7 +26,7 @@ def run_with_cache_onesentence(
         reset_hooks_end=True,
         clear_contexts=False,
         seq_len=0,
-        logit_token_idx=0,
+        logit_token_idx=-1,
         **model_kwargs,
     ):
     cache_dict, fwd, bwd = model.get_caching_hooks(
@@ -40,9 +40,11 @@ def run_with_cache_onesentence(
         clear_contexts=clear_contexts,
     ):
         model_out = model(*model_args, **model_kwargs)
-        last_token_logit = model_out[:, seq_len-1, :]
+        last_token_logit = model_out[0, seq_len-1, :] # vocab_size
+        if logit_token_idx == -1:
+            value, logit_token_idx = torch.topk(last_token_logit, k=1)
         if incl_bwd:
-            last_token_logit.squeeze()[logit_token_idx].backward()
+            last_token_logit[logit_token_idx].backward()
 
     return model_out, cache_dict
     

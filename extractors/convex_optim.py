@@ -1,16 +1,12 @@
 from .base import BaseExtractor
 from functools import partial
-from collections import OrderedDict
+import scipy as cp
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import json
-import pprint
 from logger import logger
 import os
-import time
-from sklearn.datasets import make_blobs
 import numpy as np
 from tqdm import tqdm
 
@@ -108,6 +104,7 @@ class ConvexOptimExtractor(nn.Module, BaseExtractor):
         return self
     
     def train(self, explained_model):
+        logger.info('start training convex optim...')
         log_freq = self.cfg['val_freq']
         best_recons = 0
         for epoch in range(self.cfg["epoch"]):
@@ -140,9 +137,9 @@ class ConvexOptimExtractor(nn.Module, BaseExtractor):
                 # log outputs and save best model
                 if (iter+1) % log_freq == 0:
                     logger.info('iter:{}'.format(iter + 1))
-                    logger.info('snr:{}'.format(sum(loss_dict["snr"]) / log_freq))
-                    logger.info('act_max:{}'.format(sum(loss_dict["act_max"]) / log_freq))
-                    logger.info('act_min:{}'.format(sum(loss_dict["act_min"]) / log_freq))
+                    logger.info('snr:{:.4f}'.format(sum(loss_dict["snr"]) / log_freq))
+                    logger.info('act_max:{:.4f}'.format(sum(loss_dict["act_max"]) / log_freq))
+                    logger.info('act_min:{:.4f}'.format(sum(loss_dict["act_min"]) / log_freq))
                     loss_dict = {
                         "snr": [],
                         "act_max": [],
@@ -167,12 +164,11 @@ class ConvexOptimExtractor(nn.Module, BaseExtractor):
 
     
     @torch.no_grad()
-    def get_activations(self, x, concept_idx):
+    def activation_func(self, x, concept_idx):
         out, h, loss, loss_terms = self.model(x, x)
         return h[:, concept_idx]
 
 
-@staticmethod
 def replacement_hook(mlp_post, hook, encoder):
     # mlp_post [b, l, d]
     mlp_post_shape = mlp_post.shape
@@ -181,11 +177,9 @@ def replacement_hook(mlp_post, hook, encoder):
     mlp_post_reconstr = mlp_post_reconstr.reshape(mlp_post_shape)
     return mlp_post_reconstr
 
-@staticmethod
 def zero_ablate_hook(mlp_post, hook):
     mlp_post[:] = 0.
     return mlp_post
-
 
 def get_recons_loss(dataloader, model, cfg, encoder, num_batches=5):
     with torch.no_grad():

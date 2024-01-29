@@ -16,10 +16,9 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         concept_idx=-1, 
         disturb='ablation', 
         measure_obj='loss', 
-        corr_func='cosine', 
+        corr_func='pearson', 
         class_idx=0, 
         logits_corr_topk=None,
-        return_type='00max-0min', 
     ):
         nn.Module.__init__(self)
         BaseEvaluator.__init__(self, cfg, activation_func, model)
@@ -30,7 +29,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         self.corr_func = corr_func
         self.class_idx = class_idx
         self.logits_corr_topk = logits_corr_topk
-        self.return_type = return_type
+        self.return_type = cfg['return_type']
         
     @classmethod
     def code(cls):
@@ -42,14 +41,14 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
     
     def get_metric(self, eval_tokens):
         
-        if self.measure_obj not in ['loss', 'class_logit', 'logits']:
-            assert False, "measure_obj must be one of ['loss', 'class_logit', 'logits']."
+        if self.measure_obj not in ['loss', 'class_logit', 'logits', 'pred_logit']:
+            assert False, "measure_obj must be one of ['loss', 'class_logit', 'logits', 'pred_logit']."
             
-        if self.disturb not in ['ablation', 'gradient', 'replace']:
-            assert False, "disturb must be one of ['ablation', 'gradient', 'replace']."
+        if self.disturb not in ['ablation', 'gradient', 'replace', 'replace-ablation']:
+            assert False, "disturb must be one of ['ablation', 'gradient', 'replace', 'replace-ablation']."
         
-        if self.corr_func not in ['cosine', 'KL_div', 'openai_var']:
-            assert False, "corr_func must be one of ['cosine', 'KL_div', 'openai_var']."
+        if self.corr_func not in ['pearson', 'KL_div', 'openai_var']:
+            assert False, "corr_func must be one of ['pearson', 'KL_div', 'openai_var']."
         
         _, maxlen = eval_tokens.shape[0], eval_tokens.shape[1]
         minibatch = self.cfg['concept_eval_batchsize']
@@ -69,9 +68,12 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                     assert False, "When the disturbance type is 'gradient', the measurement object must be one of ['loss', 'class_logit']."
                 elif self.measure_obj == 'loss':
                     grads, hidden_state = self.get_loss_gradient(tokens)
-                    metric = (grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
+                    metric = -(grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
                 elif self.measure_obj == 'class_logit':
                     grads, hidden_state = self.get_class_logit_gradient(tokens, self.class_idx)
+                    metric = (grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
+                elif self.measure_obj == 'pred_logit':
+                    grads, hidden_state = self.get_class_logit_gradient(tokens, -1)
                     metric = (grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
                 metric = metric[:,:-1]
                 optimizer.zero_grad()
@@ -87,7 +89,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                             corr_func=self.corr_func,
                         ) # minibatch * maxlen
                     elif self.measure_obj == 'loss':
-                        metric = self.get_loss_diff(
+                        metric = -self.get_loss_diff(
                             tokens, 
                             concept=self.concept,
                             hook=self.ablation_hook,
@@ -111,7 +113,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                             corr_func=self.corr_func,
                         )
                     elif self.measure_obj == 'loss':
-                        metric = self.get_loss_diff(
+                        metric = -self.get_loss_diff(
                             tokens, 
                             concept=self.concept,
                             hook=self.replacement_hook,
@@ -123,11 +125,57 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                             class_idx=self.class_idx,
                             hook=self.replacement_hook,
                         )
+                        
+            elif self.disturb == 'replace-ablation':
+                with torch.no_grad():
+                    if self.measure_obj == 'logits':
+                        abl_metric = self.get_logit_distribution_corr(
+                            tokens, 
+                            concept=self.concept, 
+                            hook=self.ablation_hook, 
+                            topk=self.logits_corr_topk, 
+                            corr_func=self.corr_func,
+                        ) # minibatch * maxlen
+                        rep_metric = self.get_logit_distribution_corr(
+                            tokens, 
+                            concept=self.concept, 
+                            hook=self.replacement_hook, 
+                            topk=self.logits_corr_topk, 
+                            corr_func=self.corr_func,
+                        )
+                    elif self.measure_obj == 'loss':
+                        abl_metric = -self.get_loss_diff(
+                            tokens, 
+                            concept=self.concept,
+                            hook=self.ablation_hook,
+                        ) # minibatch * (maxlen-1)
+                        rep_metric = -self.get_loss_diff(
+                            tokens, 
+                            concept=self.concept,
+                            hook=self.replacement_hook,
+                        ) # minibatch * (maxlen-1)
+                    elif self.measure_obj == 'class_logit':
+                        abl_metric = self.get_class_logit_diff(
+                            tokens,
+                            concept=self.concept,
+                            class_idx=self.class_idx,
+                            hook=self.ablation_hook,
+                        ) # minibatch * maxlen
+                        rep_metric = self.get_class_logit_diff(
+                            tokens,
+                            concept=self.concept,
+                            class_idx=self.class_idx,
+                            hook=self.ablation_hook,
+                        ) # minibatch * maxlen   
+                    metric = rep_metric - abl_metric
+                    
             metrics.append(metric)
         
         
         concept_acts = np.concatenate(concept_acts, axis=0)
         metrics = np.concatenate(metrics, axis=0)
+        
+        
         
         concept_acts = concept_acts[:,:metrics.shape[1]]
         
@@ -166,6 +214,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         logger.info('avg where concept activation > 0: {:4E}'.format(pos_act_metric))    
         logger.info('avg where concept activation > 0.8 max: {:4E}'.format(pos_act_metric_08max))  
         logger.info('avg where concept activation > 0.9 max: {:4E}'.format(pos_act_metric_09max))  
+        logger.info('max activation: {:4E}'.format(concept_acts.max()))    
         logger.info('weighted avg by concept activation: {:4E}'.format(weighted_metric))    
         logger.info('weighted sum by 1-normed concept activation: {:4E}'.format(weighted_normed_metric))  
         logger.info('weighted sum by softmaxed concept activation: {:4E}'.format(weighted_softmax_metric))      
@@ -201,6 +250,10 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
             return pos_act_metric_0max - pos_act_metric_0min
         elif self.return_type == '02max-0min':
             return pos_act_metric_02max - pos_act_metric_0min
+        elif self.return_type == 'weighted_softmax-0min':
+            return weighted_softmax_metric - pos_act_metric_0min
+        elif self.return_type == 'weighted_normed-0min':
+            return weighted_normed_metric - pos_act_metric_0min
         else:
             assert False, "return_type must be one of ['avg_0max', 'avg_08max','avg_09max','weighted','weighted_normed','weighted_softmax','08max-0max','09max-0max','09max-02min']"
         

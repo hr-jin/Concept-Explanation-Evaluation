@@ -35,6 +35,7 @@ cfg = {
         ## Concept Evaluating
         'evaluator': 'itc',
         'concept_eval_batchsize': 128,
+        'return_type': 'weighted',
         
         ## Metric Evaluating
         'metric_evaluator': 'rc',
@@ -71,7 +72,7 @@ cfg = {
         "sparsity":0.85,
         
         ## convex optim
-        "freq_sample_range": int(1e6),
+        "freq_sample_range": int(1e2),
         "reg": 0.3,
         
         ## intrinsic probing

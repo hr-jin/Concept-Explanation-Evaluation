@@ -6,3 +6,4 @@ data/output/
 configs/
 run.sh
 *.npy
+debug.sh
