@@ -1,3 +1,4 @@
+
 # Parameters written as none will be automatically set in the code, and all properties can be modified through command line parameters.
 # e.g. --dict_mult 2
 cfg = {
@@ -69,11 +70,7 @@ cfg = {
         ## spine
         "noise_level":0.2,
         "sparsity":0.85,
-        
-        ## convex optim
-        "freq_sample_range": int(1e6),
-        "reg": 0.3,
-        
+  
         ## intrinsic probing
         "language": "eng",
         "embedding": "bert",     # bert/fasttext
@@ -84,4 +81,5 @@ cfg = {
         "show_charts":False,
         "selection_criterion": "log_likelihood", # accuracy / log_likelihood / mi
         'log_wandb': False, # to use wandb
-}
+        
+    }

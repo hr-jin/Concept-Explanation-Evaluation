@@ -1,13 +1,11 @@
 from .tcav import TCAVDataloader
 from .ae import AEDataloader
-from .convex_optim import ConvexOptimDataloader
 
 
 DATALOADERS = {
     "spine": AEDataloader,
     AEDataloader.code(): AEDataloader,
-    TCAVDataloader.code(): TCAVDataloader,
-    ConvexOptimDataloader.code(): ConvexOptimDataloader,
+    TCAVDataloader.code(): TCAVDataloader
 }
 
 
