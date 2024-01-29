@@ -90,7 +90,7 @@ class ConvexOptimDataloader(AbstractDataloader):
                             inputs = inputs.to('cpu')
                             tokens = inputs['input_ids']
                         tokens = tokens[:, :self.cfg['seq_len']]
-                        freq_tensor = torch.tensor([[self.counts_dict[element.item()] for element in row] for row in tokens])
+                        freq_tensor = torch.tensor([[self.counts_dict[element.item()] if element.item() in self.counts_dict else 1 for element in row] for row in tokens])
                         freq_tensor = freq_tensor.reshape(-1)
                         
                         tokens[:, 0] = self.model.tokenizer.bos_token_id
@@ -126,7 +126,7 @@ class ConvexOptimDataloader(AbstractDataloader):
         tokens = self.get_random_batch()
         tokens = tokens[:, :self.cfg['seq_len']]
         tokens[:, 0] = self.model.tokenizer.bos_token_id
-        freq_tensor = torch.tensor([[self.counts_dict[element.item()] for element in row] for row in tokens])
+        freq_tensor = torch.tensor([[self.counts_dict[element.item()] if element.item() in self.counts_dict else 1 for element in row] for row in tokens])
         return tokens, freq_tensor
     
     @torch.no_grad()
@@ -146,5 +146,5 @@ class ConvexOptimDataloader(AbstractDataloader):
         tokens = self.get_batch()
         tokens = tokens[:, :self.cfg['seq_len']]
         tokens[:, 0] = self.model.tokenizer.bos_token_id
-        freq_tensor = torch.tensor([[self.counts_dict[element.item()] for element in row] for row in tokens])
+        freq_tensor = torch.tensor([[self.counts_dict[element.item()] if element.item() in self.counts_dict else 1 for element in row] for row in tokens])
         return tokens, freq_tensor
