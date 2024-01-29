@@ -36,6 +36,7 @@ cfg = {
         ## Concept Evaluating
         'evaluator': 'itc',
         'concept_eval_batchsize': 128,
+        'return_type': 'weighted',
         
         ## Metric Evaluating
         'metric_evaluator': 'rc',

@@ -34,9 +34,21 @@ class TCAVExtractor(nn.Module, BaseExtractor):
             concept_repres = concept_repres[np.arange(concept_repres.shape[0]),(inputs['attention_mask'].sum(-1)-1),:]
         return concept_repres
     
+    def get_token_reps(self, tokens):
+        with torch.no_grad():
+            _, cache = self.model.run_with_cache(tokens, names_filter=[self.act_name])
+            concept_repres = cache[self.act_name].cpu().detach().numpy()
+            concept_repres = concept_repres[np.arange(concept_repres.shape[0]), :, :]
+        return concept_repres
+    
     def activation_func(self, tokens, model, concept, concept_idx):
         with torch.no_grad():
-            return self.classifier.predict(tokens)
+            reps = self.get_token_reps(tokens)
+            b, t, d = reps.shape
+            reps = reps.reshape((-1, d))
+            acts = torch.tensor(self.classifier.predict_proba(reps))[:,1]
+            acts = (acts - 0.5) * (acts > 0.5)
+            return acts
    
     def extract_concepts(self, model):
         pos_examples, neg_examples, pos_labels, neg_labels = self.dataloader.next()
@@ -66,7 +78,7 @@ class TCAVExtractor(nn.Module, BaseExtractor):
         return cav, accuracy_val
     
     def get_concepts(self):
-        return self.concept
+        return torch.tensor([self.concept]).to(self.cfg['device'])
     
     def get_log_reg_params(self):
         return self.coef_, self.intercept_

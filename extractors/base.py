@@ -10,10 +10,9 @@ class BaseExtractor(metaclass=ABCMeta):
         pass
     
     @abstractclassmethod
-    def get_activations(self, x, concept_idx):
+    def activation_func(self, **kwargs):
         pass
     
-    @abstractclassmethod
     def load_from_file():
         pass
     

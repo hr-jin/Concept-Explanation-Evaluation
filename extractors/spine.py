@@ -175,7 +175,7 @@ class SpineExtractor(nn.Module, BaseExtractor):
 
     
     @torch.no_grad()
-    def get_activations(self, x, concept_idx):
+    def activation_func(self, x, concept_idx):
         out, h, loss, loss_terms = self.model(x, x)
         return h[:, concept_idx]
 

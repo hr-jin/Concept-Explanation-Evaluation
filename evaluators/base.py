@@ -154,6 +154,23 @@ class BaseEvaluator(metaclass=ABCMeta):
         return grad, hidden_state
     
     def get_class_logit_gradient(self, tokens, class_idx):
+        # class_idx = -1 means the next token's idx
+        grads = []
+        hidden_states = []
+        for i in range(tokens.shape[0]):
+            _, cache = run_with_cache_onesentence(
+                tokens[i], 
+                model=self.model,
+                names_filter=[self.cfg['act_name']], 
+                logit_token_idx=class_idx
+            )
+            grads.append(cache[self.cfg['act_name']+'_grad'].cpu().numpy())
+            hidden_states.append(cache[self.cfg['act_name']].cpu().numpy())
+        grad = np.array(grads)[:,0,:,:]
+        hidden_state = np.array(hidden_states)[:,0,:,:]
+        return grad, hidden_state
+    
+    def get_class_logit_gradient(self, tokens, class_idx):
         grads = []
         hidden_states = []
         for i in range(tokens.shape[0]):
@@ -175,7 +192,7 @@ class BaseEvaluator(metaclass=ABCMeta):
         concept, 
         hook, 
         topk=None, 
-        corr_func='cosine',
+        corr_func='pearson',
     ):
         origin_logits = self.model.run_with_hooks(tokens)
         disturbed_logits = self.model.run_with_hooks(
@@ -193,14 +210,14 @@ class BaseEvaluator(metaclass=ABCMeta):
                 sorted=True
             )
             disturbed_values = disturbed_logits.gather(-1, origin_indices)
-            
         else:
             origin_values = origin_logits
             disturbed_values = disturbed_logits
+            
         
         distributed_softmax = torch.softmax(disturbed_values, dim=-1) + 1e-10
         origin_softmax = torch.softmax(origin_values, dim=-1) + 1e-10
-        if corr_func == 'cosine':
+        if corr_func == 'pearson':
             corr = torch.cosine_similarity(
                 distributed_softmax - distributed_softmax.mean(-1, keepdim=True), 
                 origin_softmax - origin_softmax.mean(-1, keepdim=True), 
@@ -211,7 +228,7 @@ class BaseEvaluator(metaclass=ABCMeta):
         elif corr_func == 'openai_var':
             corr = 1 - (distributed_softmax - origin_softmax).square().mean(-1) / torch.var(origin_softmax, dim=-1)
         else:
-            assert False, "Correlation type not supported yet. please choose from: ['cosine', 'KL_div', 'openai_var']."
+            assert False, "Correlation type not supported yet. please choose from: ['pearson', 'KL_div', 'openai_var']."
         return corr.cpu().numpy()
     
     def get_preferred_predictions_of_concept(
