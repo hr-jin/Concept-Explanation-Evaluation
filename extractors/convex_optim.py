@@ -43,7 +43,7 @@ class ConvexOptimModel(nn.Module):
 
 
     def forward(self, batch, batch_freq):
-        I_cuda = batch.to(self.device)
+        I_cuda = batch.T.to(self.device)
         frequency = batch_freq.to(self.device)
         ahat, Res, recons = FISTA(I_cuda, self.PHI, self.reg, 500, self.device)
 
@@ -61,7 +61,7 @@ class ConvexOptimModel(nn.Module):
         return recons, ahat, (snr, self.ActL1.max(), self.ActL1.min())
     
     def inference(self, batch):
-        I_cuda = batch.to(self.device)
+        I_cuda = batch.T.to(self.device)
         ahat, Res, recons = FISTA(I_cuda, self.PHI, self.reg, 500, self.device)
         return recons, ahat
  
@@ -125,7 +125,7 @@ class ConvexOptimExtractor(nn.Module, BaseExtractor):
                 activations = activations.type(torch.FloatTensor).to(self.cfg["device"])
                 
                 # forward
-                recons, ahat, observations = self.model(activations.T, freq)            
+                recons, ahat, observations = self.model(activations, freq)            
                 snr, act_max, act_min = observations
                 
                 # log outputs
@@ -170,7 +170,11 @@ class ConvexOptimExtractor(nn.Module, BaseExtractor):
 
 @staticmethod
 def replacement_hook(mlp_post, hook, encoder):
-    mlp_post_reconstr = encoder.inference(mlp_post.T)[0]
+    # mlp_post [b, l, d]
+    mlp_post_shape = mlp_post.shape
+    mlp_post = mlp_post.reshape((-1, mlp_post_shape[-1]))
+    mlp_post_reconstr = encoder.inference(mlp_post)[0]
+    mlp_post_reconstr = mlp_post_reconstr.reshape(mlp_post_shape)
     return mlp_post_reconstr
 
 @staticmethod
@@ -183,7 +187,7 @@ def get_recons_loss(dataloader, model, cfg, encoder, num_batches=5):
     with torch.no_grad():
         loss_list = []
         for i in range(num_batches):
-            tokens = dataloader.get_processed_random_batch()
+            tokens, token_freq = dataloader.get_processed_random_batch()
             loss = model(tokens, return_type="loss")
             recons_loss = model.run_with_hooks(tokens, return_type="loss", fwd_hooks=[(cfg["act_name"], partial(replacement_hook, encoder=encoder))])
             zero_abl_loss = model.run_with_hooks(tokens, return_type="loss", fwd_hooks=[(cfg["act_name"], zero_ablate_hook)])

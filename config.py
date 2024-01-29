@@ -71,7 +71,7 @@ cfg = {
         "sparsity":0.85,
         
         ##
-        "freq_sample_range": int(1e5),
+        "freq_sample_range": int(1e6),
         "reg": 0.3,
         
     }

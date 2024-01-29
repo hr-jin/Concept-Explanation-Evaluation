@@ -6,8 +6,8 @@ import numpy as np
 import time
 
 def count_occurrences(input_tensor):
-    print("counting occurrences...")
-    print(input_tensor.shape)
+    logger.info("counting occurrences...")
+    # print(input_tensor.shape)
     start_time = time.time()
     
     # Flatten the input tensor
@@ -22,7 +22,7 @@ def count_occurrences(input_tensor):
         counts_dict[w] = np.sqrt(counts_dict[w])
         
     end_time = time.time()
-    print("counting occurrences takes {} seconds".format(end_time - start_time))
+    logger.info("counting occurrences takes {} seconds".format(end_time - start_time))
 
     return counts_dict
 
@@ -119,15 +119,14 @@ class ConvexOptimDataloader(AbstractDataloader):
             tokens = inputs['input_ids']
         
         tokens = tokens[:, :self.cfg['seq_len']]
-        freq_tensor = torch.tensor([[self.counts_dict[element] for element in row] for row in tokens])
-        return tokens, freq_tensor
+        return tokens
     
     @torch.no_grad()
     def get_processed_random_batch(self):
         tokens = self.get_random_batch()
         tokens = tokens[:, :self.cfg['seq_len']]
         tokens[:, 0] = self.model.tokenizer.bos_token_id
-        freq_tensor = torch.tensor([[self.counts_dict[element] for element in row] for row in tokens])
+        freq_tensor = torch.tensor([[self.counts_dict[element.item()] for element in row] for row in tokens])
         return tokens, freq_tensor
     
     @torch.no_grad()
@@ -140,13 +139,12 @@ class ConvexOptimDataloader(AbstractDataloader):
             inputs = self.tokenizer(sentences, max_length=128, truncation=True, padding=True,return_tensors="pt")
             inputs = inputs.to('cpu')
             tokens = inputs['input_ids']
-        freq_tensor = torch.tensor([[self.counts_dict[element] for element in row] for row in tokens])
-        return tokens, freq_tensor
+        return tokens
     
     @torch.no_grad()
     def get_processed_batch(self):
         tokens = self.get_batch()
         tokens = tokens[:, :self.cfg['seq_len']]
         tokens[:, 0] = self.model.tokenizer.bos_token_id
-        freq_tensor = torch.tensor([[self.counts_dict[element] for element in row] for row in tokens])
+        freq_tensor = torch.tensor([[self.counts_dict[element.item()] for element in row] for row in tokens])
         return tokens, freq_tensor
