@@ -34,7 +34,7 @@ class OutputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         self.concept = concept
         self.concept_idx = concept_idx
     
-    def get_metric(self, eval_tokens, return_tokens=False):
+    def get_metric(self, eval_tokens, return_tokens=False, **kwargs):
         _, most_preferred_tokens, topk_indices = self.get_preferred_predictions_of_concept(eval_tokens, self.concept)
         topk_indices = topk_indices[most_preferred_tokens != '\ufffd']
         most_preferred_tokens = most_preferred_tokens[most_preferred_tokens != '\ufffd']
@@ -53,8 +53,8 @@ class OutputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
             assert False, "PMI type not supported yet. please choose from: ['silhouette']."
         logger.info('Output Topic Coherence Metric ({}): {:.4f}'.format(self.pmi_type, otc))    
         if return_tokens:
-            return otc
-        else:
             return otc, most_preferred_tokens
+        else:
+            return otc
         
             

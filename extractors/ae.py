@@ -31,7 +31,10 @@ class AutoEncoder(nn.Module, BaseExtractor):
             self.W_enc = nn.Parameter(torch.nn.init.kaiming_uniform_(torch.empty(d_out, d_hidden, dtype=dtype)))
             self.W_dec = nn.Parameter(torch.nn.init.kaiming_uniform_(torch.empty(d_hidden, d_out, dtype=dtype)))
         self.b_enc = nn.Parameter(torch.zeros(d_hidden, dtype=dtype))
-        self.b_dec = nn.Parameter(torch.zeros(d_out, dtype=dtype))
+        if cfg['use_bias_d'] == 0:
+            self.b_dec = nn.Parameter(torch.zeros(d_out, dtype=dtype), requires_grad=False) 
+        else:
+            self.b_dec = nn.Parameter(torch.zeros(d_out, dtype=dtype))
         
         self.W_dec.data[:] = self.W_dec / self.W_dec.norm(dim=-1, keepdim=True)
         self.cfg = cfg
@@ -48,7 +51,6 @@ class AutoEncoder(nn.Module, BaseExtractor):
             acts = F.relu(x_cent @ self.W_dec.T + self.b_enc)
         else:
             acts = F.relu(x_cent @ self.W_enc + self.b_enc)
-        
         x_reconstruct = acts @ self.W_dec + self.b_dec
         return x_reconstruct, acts
     

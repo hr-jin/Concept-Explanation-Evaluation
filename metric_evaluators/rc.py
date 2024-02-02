@@ -29,16 +29,44 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
         eval_tokens = eval_tokens.split(minibatch, dim=0) 
           
         metric_list = []
+        topic_tokens = [[None for i in range(len(concept_idxs))] for j in range(len(eval_tokens))]
+        topic_idxs = [[None for i in range(len(concept_idxs))] for j in range(len(eval_tokens))]
+        pre_metrics = dict()
+        pre_concept_acts = dict()
         for i, tokens in enumerate(eval_tokens):
             logger.info('Metric evaluation on subdataset {}...\n'.format(i+1))
             tmp_metric_list = []
             for name, evaluator in evaluator_dict.items():  
                 logger.info('Evaluating {} ...'.format(name))
                 concept_metric_list = []
+                # for j, concept_idx in enumerate(concept_idxs):
+                #     concept = concepts[j]
+                #     evaluator.update_concept(concept, concept_idx) 
+                #     concept_metric = evaluator.get_metric(tokens)
+                #     concept_metric_list.append(concept_metric)
+                # tmp_metric_list.append(concept_metric_list)
+                
                 for j, concept_idx in enumerate(concept_idxs):
                     concept = concepts[j]
                     evaluator.update_concept(concept, concept_idx) 
-                    concept_metric = evaluator.get_metric(tokens)
+                    if 'itc' in name:
+                        if topic_tokens[i][j] is None:
+                            tmp_tokens, tmp_idxs = evaluator.get_most_critical_tokens(tokens, concept, concept_idx)
+                            topic_tokens[i][j] = tmp_tokens
+                            topic_idxs[i][j] = tmp_idxs
+                        concept_metric = evaluator.get_metric(tokens, topic_tokens[i][j], topic_idxs[i][j])
+                    elif 'replace-ablation' in name: 
+                        abl_str = name.replace('replace-ablation', 'ablation') + str(concept_idx)
+                        rep_str = name.replace('replace-ablation', 'replace') + str(concept_idx)
+                        tmp_acts = pre_concept_acts[abl_str]
+                        tmp_metrics = pre_metrics[rep_str] + pre_metrics[abl_str] # ablation metrics has been inverted
+                        concept_metric = evaluator.get_metric(tokens, tmp_metrics, tmp_acts)
+                    elif ('replace' in name) or ('ablation' in name):
+                        concept_metric, tmp_metrics, tmp_acts = evaluator.get_metric(tokens, return_metric_and_acts=True)
+                        pre_metrics[name + str(concept_idx)] = tmp_metrics
+                        pre_concept_acts[name + str(concept_idx)] = tmp_acts
+                    else:
+                        concept_metric = evaluator.get_metric(tokens)
                     concept_metric_list.append(concept_metric)
                 tmp_metric_list.append(concept_metric_list)
             metric_list.append(tmp_metric_list)

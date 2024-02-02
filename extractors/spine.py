@@ -95,19 +95,28 @@ class SpineExtractor(nn.Module, BaseExtractor):
                 json.dump(self.cfg, f)
     
     @classmethod
-    def load_from_file(cls, dataloader, save_dir=None, ckpt_name=None):
+    def load_from_file(cls, dataloader, path=None, cfg=None):
 
         """
         Loads the saved extractor from file.
         """
-        if ckpt_name is None:
-            cfg = json.load(open(os.path.join(save_dir, "cfg.json"), "r"))
-            state_dict = torch.load(os.path.join(save_dir, "model.pt"))
-        else:
-            cfg = json.load(open(os.path.join(save_dir, ckpt_name+".json"), "r"))
-            state_dict = torch.load(os.path.join(save_dir, ckpt_name+".pt"))
-        self = cls(cfg, dataloader)
+        # if ckpt_name is None:
+        #     cfg = json.load(open(os.path.join(save_dir, "cfg.json"), "r"))
+        #     state_dict = torch.load(os.path.join(save_dir, "model.pt"))
+        # else:
+        #     cfg = json.load(open(os.path.join(save_dir, ckpt_name+".json"), "r"))
+        #     state_dict = torch.load(os.path.join(save_dir, ckpt_name+".pt"))
+        # self = cls(cfg, dataloader)
+        # self.load_state_dict(state_dict)
+        if cfg == None:
+            cfg = json.load(open(path + ".json", "r"))
+        if path == None:
+            path = cfg['load_path']
+        pprint.pprint(cfg)
+        self = cls(cfg=cfg, dataloader=dataloader)
+        state_dict = torch.load(path + ".pt")
         self.load_state_dict(state_dict)
+        return self
         return self
     
     def train(self, explained_model):
@@ -167,7 +176,7 @@ class SpineExtractor(nn.Module, BaseExtractor):
                     if recons_score > best_recons:
                         best_recons = recons_score
                         logger.info(f"Saving best model with reconstruction score: {recons_score:.2%}")
-                        # save function
+                        self.save('spine_best_reconstruct')
         self.is_trained = True               
     
     def extract_concepts(self, model):

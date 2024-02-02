@@ -23,6 +23,7 @@ cfg = {
         'init_type': 'kaiming_uniform',
         'remove_parallel': 1,
         'tied_enc_dec': 0,
+        'use_bias_d': 1,
         "epoch": 1,
         
         ## Training
@@ -72,7 +73,7 @@ cfg = {
         "sparsity":0.85,
         
         ## convex optim
-        "freq_sample_range": int(1e2),
+        "freq_sample_range": int(1e6),
         "reg": 0.3,
         
         ## intrinsic probing

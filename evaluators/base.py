@@ -132,14 +132,23 @@ class BaseEvaluator(metaclass=ABCMeta):
         class_idx, 
         hook,
     ):
-        logit = self.model.run_with_hooks(tokens)[:,:,class_idx]
-        logit_disturbed = self.model.run_with_hooks(
+        # class_idx = -1 means the next token's idx
+        logits = self.model.run_with_hooks(tokens)
+        logits_disturbed = self.model.run_with_hooks(
             tokens, 
             fwd_hooks=[(
                 self.cfg["act_name"], 
                 partial(hook, concept=concept))
             ]
-        )[:,:,class_idx]
+        )
+        
+        if class_idx == -1:
+            max_indices = torch.argmax(logits, dim=-1)
+            logit = torch.gather(logits, dim=-1, index=max_indices.unsqueeze(-1)).squeeze()
+            logit_disturbed = torch.gather(logits_disturbed, dim=-1, index=max_indices.unsqueeze(-1)).squeeze()
+        else:
+            logit = logits[:,:,class_idx]
+            logit_disturbed = logits_disturbed[:,:,class_idx]
         return (logit_disturbed - logit).cpu().numpy()
     
     def get_loss_gradient(self, tokens):
@@ -169,22 +178,7 @@ class BaseEvaluator(metaclass=ABCMeta):
         grad = np.array(grads)[:,0,:,:]
         hidden_state = np.array(hidden_states)[:,0,:,:]
         return grad, hidden_state
-    
-    def get_class_logit_gradient(self, tokens, class_idx):
-        grads = []
-        hidden_states = []
-        for i in range(tokens.shape[0]):
-            _, cache = run_with_cache_onesentence(
-                tokens[i], 
-                model=self.model,
-                names_filter=[self.cfg['act_name']], 
-                logit_token_idx=class_idx
-            )
-            grads.append(cache[self.cfg['act_name']+'_grad'].cpu().numpy())
-            hidden_states.append(cache[self.cfg['act_name']].cpu().numpy())
-        grad = np.array(grads)[:,0,:,:]
-        hidden_state = np.array(hidden_states)[:,0,:,:]
-        return grad, hidden_state
+
     
     def get_topic_coherence(self, eval_tokens, most_critical_tokens):
         sentences = np.array(self.model.to_string(eval_tokens[:,1:]))
@@ -200,7 +194,7 @@ class BaseEvaluator(metaclass=ABCMeta):
             topic_coherence = (pmis * mask).sum() / mask.sum()
         elif self.pmi_type == 'umass':  
             pmis = torch.log((binary_inclusion + epsilon) / token_inclusion)
-            mask = torch.triu(torch.ones_like(pmis),diagonal=1)
+            mask = torch.ones_like(pmis) - torch.eye(pmis.shape[0])
             topic_coherence = (pmis * mask).sum() / mask.sum()
         return topic_coherence
     
@@ -208,13 +202,23 @@ class BaseEvaluator(metaclass=ABCMeta):
         X = self.model.embed.W_E.detach().cpu()[most_critical_token_idxs]
         if self.pmi_type == 'emb_dist':  
             pmis = torch.tensor([[(emb1 - emb2).square().sum(-1).sqrt() for emb2 in X] for emb1 in X])
-            mask = torch.triu(torch.ones_like(pmis),diagonal=1)
-            topic_coherence = (pmis * mask).sum() / mask.sum()
+            if X.shape[0] == 1:
+                topic_coherence = 0.
+            elif X.shape[0] == 0:
+                topic_coherence = -2.
+            else:
+                mask = torch.triu(torch.ones_like(pmis),diagonal=1)
+                topic_coherence = (pmis * mask).sum() / mask.sum()
         elif self.pmi_type == 'emb_cos':  
             X_normed = X / X.square().sum(-1).sqrt().unsqueeze(1)
-            pmis = X_normed @ X_normed.T
-            mask = torch.triu(torch.ones_like(pmis),diagonal=1)
-            topic_coherence = (pmis * mask).sum() / mask.sum()
+            if X.shape[0] == 1:
+                topic_coherence = 1.
+            elif X.shape[0] == 0:
+                topic_coherence = -1.
+            else:
+                pmis = X_normed @ X_normed.T
+                mask = torch.triu(torch.ones_like(pmis),diagonal=1)
+                topic_coherence = (pmis * mask).sum() / mask.sum()
         return topic_coherence
         
     
@@ -291,7 +295,7 @@ class BaseEvaluator(metaclass=ABCMeta):
             best_score = 2. - X_unique.shape[0]
         else:
             N_clusters = range(2, min(6, X.shape[0]))
-            best_num = 0
+            best_num = 1.
             best_score = -2.
             for num in N_clusters:
                 kmeans_model = KMeans(n_clusters=num, random_state=0, n_init='auto').fit(X)
