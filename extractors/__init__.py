@@ -2,6 +2,7 @@ from .ae import AutoEncoder
 from .tcav import TCAVExtractor
 from .spine import SpineExtractor
 from .convex_optim import ConvexOptimExtractor
+from .conceptx import ConceptX
 # from .intrinsic_probing import IntrinsicProbingExtractor
 
 EXTRACTORS = {
@@ -9,6 +10,7 @@ EXTRACTORS = {
     TCAVExtractor.code(): TCAVExtractor,
     SpineExtractor.code(): SpineExtractor,
     ConvexOptimExtractor.code(): ConvexOptimExtractor,
+    ConceptX.code(): ConceptX
     # IntrinsicProbingExtractor.code(): IntrinsicProbingExtractor,
 }
 
