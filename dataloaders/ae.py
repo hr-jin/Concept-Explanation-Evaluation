@@ -102,6 +102,18 @@ class AEDataloader(AbstractDataloader):
         return tokens[:, :self.cfg['seq_len']]
     
     @torch.no_grad()
+    def get_pointer_batch(self):
+        if self.cfg['tokenized']:
+            tokens = self.data[self.pointer : self.pointer + self.cfg['model_batch_size']]['tokens']
+            tokens = torch.tensor(tokens)
+        else:    
+            sentences = self.data[self.pointer : self.pointer + self.cfg['model_batch_size']]
+            inputs = self.tokenizer(sentences, max_length=128, truncation=True, padding=True,return_tensors="pt")
+            inputs = inputs.to('cpu')
+            tokens = inputs['input_ids']
+        return tokens[:, :self.cfg['seq_len']]
+    
+    @torch.no_grad()
     def get_processed_batch(self):
         tokens = self.get_batch()
         tokens = tokens[:, :self.cfg['seq_len']]

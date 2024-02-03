@@ -5,6 +5,7 @@ from .convex_optim import ConvexOptimDataloader
 
 DATALOADERS = {
     "spine": AEDataloader,
+    "conceptx":AEDataloader,
     AEDataloader.code(): AEDataloader,
     TCAVDataloader.code(): TCAVDataloader,
     ConvexOptimDataloader.code(): ConvexOptimDataloader,
