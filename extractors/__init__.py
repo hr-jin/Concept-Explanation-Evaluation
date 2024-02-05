@@ -1,13 +1,14 @@
 from .ae import AutoEncoder
 from .tcav import TCAVExtractor
 from .conceptx import ConceptX
-# from .intrinsic_probing import IntrinsicProbingExtractor
+from .neuron import Neuron
 
 EXTRACTORS = {
     AutoEncoder.code(): AutoEncoder,
     TCAVExtractor.code(): TCAVExtractor,
     ConceptX.code(): ConceptX
     # IntrinsicProbingExtractor.code(): IntrinsicProbingExtractor,
+    Neuron.code(): Neuron,
 }
 
 def extractor_factory(cfg, dataloader):

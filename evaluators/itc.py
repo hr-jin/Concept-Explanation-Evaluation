@@ -38,7 +38,7 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
     
     def get_metric(self, eval_tokens, topic_tokens=None, topic_idxs=None, return_tokens=False, **kwargs):
         if topic_tokens is None:
-            most_critical_tokens, most_critical_token_idxs = self.get_most_critical_tokens(eval_tokens, self.concept, self.concept_idx)
+            most_critical_tokens, most_critical_token_idxs, origin_df = self.get_most_critical_tokens(eval_tokens, self.concept, self.concept_idx)
         else:
             most_critical_tokens = topic_tokens
             most_critical_token_idxs = topic_idxs
@@ -65,7 +65,7 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         
         logger.info('Input Topic Coherence Metric ({}): {:.4f}'.format(self.pmi_type, itc))    
         if return_tokens:
-            return itc, most_critical_tokens
+            return itc, most_critical_tokens, origin_df
         else:
             return itc
         

@@ -58,6 +58,7 @@ class AEDataloader(AbstractDataloader):
                             inputs = self.tokenizer(sentences, max_length=128, truncation=True, padding=True,return_tensors="pt")
                             inputs = inputs.to('cpu')
                             tokens = inputs['input_ids']
+                        # print(tokens.dtype)
                         tokens = tokens[:, :self.cfg['seq_len']]
                         tokens[:, 0] = self.model.tokenizer.bos_token_id
                         _, cache = self.model.run_with_cache(tokens, names_filter=self.cfg["act_name"], remove_batch_dim=False)
@@ -74,20 +75,19 @@ class AEDataloader(AbstractDataloader):
     def get_random_batch(self):
         if self.cfg['tokenized']:
             tokens = self.data[torch.randperm(len(self.data))[:self.cfg['model_batch_size']]]['tokens']
-            tokens = torch.tensor(tokens)
+            tokens = torch.tensor(tokens)[:, :self.cfg['seq_len']]
         else:    
             sentences = self.data[torch.randperm(len(self.data))[:self.cfg['model_batch_size']]]
             inputs = self.tokenizer(sentences, max_length=128, truncation=True, padding=True,return_tensors="pt")
             inputs = inputs.to('cpu')
-            tokens = inputs['input_ids']
-        return tokens[:, :self.cfg['seq_len']]
+            tokens = inputs['input_ids'][:, :self.cfg['seq_len']]
+        return tokens
     
     @torch.no_grad()
     def get_processed_random_batch(self):
         tokens = self.get_random_batch()
-        tokens = tokens[:, :self.cfg['seq_len']]
-        tokens[:, 0] = self.model.tokenizer.bos_token_id
-        return tokens
+        tokens[:, 0] = self.model.tokenizer.bos_token_id        
+        return tokens[:, :self.cfg['seq_len']], tokens
     
     @torch.no_grad()
     def get_batch(self):

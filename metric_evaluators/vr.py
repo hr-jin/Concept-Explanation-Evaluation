@@ -6,9 +6,6 @@ import numpy as np
 import datetime
 from scipy.stats import kendalltau, pearsonr
 
-
-
-
 class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
     def __init__(self, cfg):
         nn.Module.__init__(self)
@@ -24,12 +21,20 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         evaluator_dict=dict(), 
         concepts=[], 
         concept_idxs=[], 
+        origin_tokens=None,
+        most_imp_tokens=None,
+        most_imp_idxs=None,
         **kwargs
     ):           
         logger.info('Metric evaluation ...\n')
         metric_list = []
         topic_tokens = [None for i in range(len(concept_idxs))]
         topic_idxs = [None for i in range(len(concept_idxs))]
+        if most_imp_tokens is not None:
+            topic_tokens = [most_imp_tokens[i] for i in range(len(concept_idxs))]
+            topic_idxs = [most_imp_idxs[i].values for i in range(len(concept_idxs))]
+        origin_dfs = [None for i in range(len(concept_idxs))]
+        most_preferred_tokens = [None for i in range(len(concept_idxs))]
         pre_metrics = dict()
         pre_concept_acts = dict()
         for name, evaluator in evaluator_dict.items():   
@@ -40,10 +45,12 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
                 evaluator.update_concept(concept, concept_idx) 
                 if 'itc' in name:
                     if topic_tokens[j] is None:
-                        tmp_tokens, tmp_idxs = evaluator.get_most_critical_tokens(eval_tokens, concept, concept_idx)
+                        tmp_tokens, tmp_idxs, origin_df = evaluator.get_most_critical_tokens(eval_tokens, concept, concept_idx)
                         topic_tokens[j] = tmp_tokens
                         topic_idxs[j] = tmp_idxs
-                    concept_metric = evaluator.get_metric(eval_tokens, topic_tokens[j], topic_idxs[j])
+                        origin_dfs[j] = origin_df
+                    
+                    concept_metric = evaluator.get_metric(origin_tokens, topic_tokens[j], topic_idxs[j])
                 elif 'replace-ablation' in name: 
                     abl_str = name.replace('replace-ablation', 'ablation') + str(concept_idx)
                     rep_str = name.replace('replace-ablation', 'replace') + str(concept_idx)
@@ -54,11 +61,17 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
                     concept_metric, tmp_metrics, tmp_acts = evaluator.get_metric(eval_tokens, return_metric_and_acts=True)
                     pre_metrics[name + str(concept_idx)] = tmp_metrics
                     pre_concept_acts[name + str(concept_idx)] = tmp_acts
+                elif 'otc' in name:
+                    concept_metric, tmp_preferred_tokens = evaluator.get_metric(eval_tokens, return_tokens=True)
+                    most_preferred_tokens[j] = tmp_preferred_tokens
                 else:
                     concept_metric = evaluator.get_metric(eval_tokens)
                 concept_metric_list.append(concept_metric)
             metric_list.append(concept_metric_list)
         metrics = torch.tensor(metric_list) # n_metrics, n_concepts 
+        
+        dtime = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+        
         
         pearsonr_list = []
         pearsonr_p_list = []
@@ -71,13 +84,6 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
                 tmp_p_list.append(pvalue)
             pearsonr_list.append(tmp_list)
             pearsonr_p_list.append(tmp_p_list)
-            
-        # cosine_sim_list = []
-        # for i in metrics:
-        #     tmp_list = []
-        #     for j in metrics:
-        #         tmp_list.append(torch.cosine_similarity(i, j, dim=-1))
-        #     cosine_sim_list.append(tmp_list)
             
         kendalltau_list = []
         kendalltau_p_list = []
@@ -98,12 +104,18 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         # cosine_sim_metrics = torch.tensor(cosine_sim_list).cpu().numpy() # n_metrics * n_metrics
         
         
-        dtime = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'pearsonr_metrics.npy',pearsonr_metrics)
+        
+        # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'pearsonr_metrics.npy',pearsonr_metrics)
         np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'kendalltau_metrics.npy',kendalltau_metrics)
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'pearson_p_metrics.npy',pearson_p_metrics)
+        # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'pearson_p_metrics.npy',pearson_p_metrics)
         np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'kendall_p_metrics.npy',kendall_p_metrics)
         np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_metrics.npy',metrics)
+        
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_tokens.npy',np.array(topic_tokens))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_idxs.npy',np.array(topic_idxs))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_pref_tokens.npy',np.array(most_preferred_tokens))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'concept_idxs.npy',np.array(concept_idxs))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_dfs.npy',np.array(origin_dfs))
         
         # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'cosine_sim_metrics.npy',cosine_sim_metrics)
         

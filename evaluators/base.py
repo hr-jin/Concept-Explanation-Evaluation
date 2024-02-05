@@ -181,21 +181,24 @@ class BaseEvaluator(metaclass=ABCMeta):
 
     
     def get_topic_coherence(self, eval_tokens, most_critical_tokens):
-        sentences = np.array(self.model.to_string(eval_tokens[:,1:]))
-        inclusion = torch.tensor([[token in sentence.lower() for sentence in sentences] for token in most_critical_tokens]).to(int)
-        epsilon=1e-10
-        corpus_len = sentences.shape[0]
-        binary_inclusion = inclusion @ inclusion.T / corpus_len
-        token_inclusion = inclusion.sum(-1) / corpus_len
-        if self.pmi_type == 'uci':  
-            token_inclusion_mult = token_inclusion.unsqueeze(0).T @ token_inclusion.unsqueeze(0)
-            pmis = torch.log((binary_inclusion + epsilon) / token_inclusion_mult)
-            mask = torch.triu(torch.ones_like(pmis),diagonal=1)
-            topic_coherence = (pmis * mask).sum() / mask.sum()
-        elif self.pmi_type == 'umass':  
-            pmis = torch.log((binary_inclusion + epsilon) / token_inclusion)
-            mask = torch.ones_like(pmis) - torch.eye(pmis.shape[0])
-            topic_coherence = (pmis * mask).sum() / mask.sum()
+        if most_critical_tokens.shape[0] == 0:
+            topic_coherence = -20.
+        else:
+            sentences = np.array(self.model.to_string(eval_tokens[:,1:]))
+            inclusion = torch.tensor([[token in sentence.lower() for sentence in sentences] for token in most_critical_tokens]).to(int)
+            epsilon=1e-10
+            corpus_len = sentences.shape[0]
+            binary_inclusion = inclusion @ inclusion.T / corpus_len
+            token_inclusion = inclusion.sum(-1) / corpus_len
+            if self.pmi_type == 'uci':  
+                token_inclusion_mult = token_inclusion.unsqueeze(0).T @ token_inclusion.unsqueeze(0)
+                pmis = torch.log((binary_inclusion + epsilon) / token_inclusion_mult)
+                mask = torch.triu(torch.ones_like(pmis),diagonal=1)
+                topic_coherence = (pmis * mask).sum() / mask.sum()
+            elif self.pmi_type == 'umass':  
+                pmis = torch.log((binary_inclusion + epsilon) / token_inclusion)
+                mask = torch.ones_like(pmis) - torch.eye(pmis.shape[0])
+                topic_coherence = (pmis * mask).sum() / mask.sum()
         return topic_coherence
     
     def get_emb_topic_coherence(self, most_critical_token_idxs):
@@ -290,7 +293,10 @@ class BaseEvaluator(metaclass=ABCMeta):
         token_indices_unique = np.unique(token_indices)
         X = self.model.embed.W_E.detach().cpu().numpy()[token_indices]
         X_unique = self.model.embed.W_E.detach().cpu().numpy()[token_indices_unique]
-        if X_unique.shape[0] <= 2:
+        if X_unique.shape[0] == 0:
+            best_num = 1. 
+            best_score = 2. - X_unique.shape[0]
+        elif X_unique.shape[0] in [1, 2]:
             best_num = X_unique.shape[0]
             best_score = 2. - X_unique.shape[0]
         else:
@@ -376,8 +382,9 @@ class BaseEvaluator(metaclass=ABCMeta):
             
         
         df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx_x']]
-        print('df_final:\n', df_final[:10])
+        print('df_final:\n', df_final[:5])
         df_final = df_final[:5]
+        origin_df = df_final
         max_value = df_final['imp'].values.max()
         df_final = df_final[df_final['imp']>=max_value*0.2]
         df_most_critical_tokens = df_final['token'].apply(lambda x:x.strip().lower()).values
@@ -385,4 +392,4 @@ class BaseEvaluator(metaclass=ABCMeta):
         most_critical_token_idxs = df_most_critical_token_idxs[df_most_critical_tokens != '']
         most_critical_tokens = df_most_critical_tokens[df_most_critical_tokens != '']
         logger.info('The most critical tokens(after removing the spaces and changing to lower case): \n{}'.format(' '.join(most_critical_tokens)))
-        return most_critical_tokens, most_critical_token_idxs
+        return most_critical_tokens, most_critical_token_idxs, origin_df
