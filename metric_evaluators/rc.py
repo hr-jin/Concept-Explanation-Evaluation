@@ -51,7 +51,7 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
                     evaluator.update_concept(concept, concept_idx) 
                     if 'itc' in name:
                         if topic_tokens[i][j] is None:
-                            tmp_tokens, tmp_idxs = evaluator.get_most_critical_tokens(tokens, concept, concept_idx)
+                            tmp_tokens, tmp_idxs, origin_df = evaluator.get_most_critical_tokens(tokens, concept, concept_idx)
                             topic_tokens[i][j] = tmp_tokens
                             topic_idxs[i][j] = tmp_idxs
                         concept_metric = evaluator.get_metric(tokens, topic_tokens[i][j], topic_idxs[i][j])

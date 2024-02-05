@@ -194,7 +194,7 @@ class AutoEncoder(nn.Module, BaseExtractor):
         with torch.no_grad():
             loss_list = []
             for i in range(num_batches):
-                tokens = dataloader.get_processed_random_batch()
+                tokens, _ = dataloader.get_processed_random_batch()
                 loss = model(tokens, return_type="loss")
                 recons_loss = model.run_with_hooks(tokens, return_type="loss", fwd_hooks=[(cfg["act_name"], partial(self.replacement_hook, encoder=self))])
                 zero_abl_loss = model.run_with_hooks(tokens, return_type="loss", fwd_hooks=[(cfg["act_name"], self.zero_ablate_hook)])

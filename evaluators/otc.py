@@ -44,7 +44,7 @@ class OutputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
 
         if self.pmi_type == 'silhouette':
             best_num, best_score = self.get_silhouette_score(np.array(topk_indices))
-            otc = best_score / best_num
+            otc = best_score
         elif self.pmi_type == 'emb_dist':
             otc = -self.get_emb_topic_coherence(np.array(topk_indices))
         elif self.pmi_type == 'emb_cos':

@@ -7,3 +7,4 @@ configs/
 run.sh
 *.npy
 debug.sh
+transform_dataset.py

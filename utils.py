@@ -48,65 +48,6 @@ def run_with_cache_onesentence(
 
     return model_out, cache_dict
     
-def load_model(args, device_list=None):
-    model_name = args.model_to_interpret
-    model_path = args.model_dir
-    device = args.device
-    n_devices = args.n_devices
-    
-    if 'llama' in model_name.lower():
-        config = LlamaConfig.from_pretrained(model_path)
-        with init_empty_weights():
-            model_config = LlamaForCausalLM._from_config(config) 
-        
-        device_map = {}
-        if device_list != None:
-            device_list = [('cuda:' + str(i)) for i in device_list]
-        elif device == 'cpu':
-            device_list = ['cpu']
-        else:
-            start_idx = int(device.split(':')[-1])
-            device_list = [('cuda:' + str(i)) for i in range(start_idx, start_idx + n_devices)]
-        
-        device_map['model.embed_tokens.weight'] = device_list[0]
-        device_map['model.norm.weight'] = device_list[-1]
-        device_map['lm_head.weight'] = device_list[-1]
-        for i in range(32):
-            device_map['model.layers.'+str(i)+'.self_attn'] = device_list[i // (32 // len(device_list) + 1)]
-            device_map['model.layers.'+str(i)+'.mlp'] = device_list[i // (32 // len(device_list) + 1)]
-            device_map['model.layers.'+str(i)+'.input_layernorm'] = device_list[i // (32 // len(device_list) + 1)]
-            device_map['model.layers.'+str(i)+'.post_attention_layernorm'] = device_list[i // (32 // len(device_list) + 1)]
-        
-        hf_model = load_checkpoint_and_dispatch(
-            model_config, checkpoint=model_path, device_map=device_map
-        )
-        hf_model.eval()
-        hf_model.requires_grad_(True)
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-
-        model = HookedTransformer.from_pretrained(model_name,
-                                                  n_devices=n_devices,
-                                                  device=device,
-                                                  fold_value_biases=False,
-                                                  fold_ln=False, 
-                                                  center_writing_weights=False, 
-                                                  center_unembed=False, 
-                                                  hf_model=hf_model, 
-                                                  tokenizer=tokenizer)
-    elif 'pythia' in model_name.lower():
-        if model_path != '':
-            model = HookedTransformer.from_pretrained(model_path).to(device)
-        else:
-            model = HookedTransformer.from_pretrained(model_name).to(device)
-            
-    elif 'gpt' in model_name.lower():
-        pass
-    
-    else:
-        assert False, 'This type of model is not supported yet.'
-    
-    return model
-    
 def load_dataset(data_dir, dataset_name, data_from_hf):
     if data_from_hf:
         if not os.path.exists(data_dir + dataset_name + '.hf'):
