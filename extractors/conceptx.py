@@ -19,6 +19,7 @@ class ConceptX(nn.Module, BaseExtractor):
         super().__init__()
         self.cfg = cfg
         self.dataloader = dataloader
+            
 
     def forward(self):
         ...
@@ -26,9 +27,40 @@ class ConceptX(nn.Module, BaseExtractor):
     @classmethod
     def code(cls):
         return "conceptx"
+    
+    @classmethod
+    def load_from_file(cls, dataloader, path=None, cfg=None):
+        """
+        """
+        if cfg == None:
+            cfg = json.load(open(path + ".json", "r"))
+        if path == None:
+            path = cfg['load_path']
+        pprint.pprint(cfg)
+        self = cls(cfg=cfg, dataloader=dataloader)
+        self.concepts = torch.tensor(torch.load("./data/conceptx_concepts.pt")).to(cfg['device'])
+        return self
 
-    def activation_func(self):
-        ...
+
+    @torch.no_grad()
+    def activation_func(self, tokens, model, concept=None, concept_idx=None):
+        _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
+        hidden_states = cache[self.cfg["act_name"]]
+    
+        assert tokens.shape[1] == hidden_states.shape[1]
+        
+        if self.cfg['site'] == 'mlp_post':
+            hidden_states = hidden_states.reshape(-1, self.cfg['d_mlp'])
+        else: 
+            hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
+            
+        if concept_idx == None:
+            results = torch.cosine_similarity(hidden_states, concept, dim=-1)
+            # results = results * (results > 0.)
+        else:
+            results = torch.cosine_similarity(hidden_states, self.concepts[concept_idx, :], dim=-1)
+            # results = results * (results > 0.)
+        return results
 
     def extract_concepts(self, model):
         hidden_states = []
@@ -59,6 +91,7 @@ class ConceptX(nn.Module, BaseExtractor):
         concepts = np.array(concepts)   #(cluster_num, 512)
 
         self.concepts = torch.tensor(concepts, device=self.cfg["device"])
+        torch.save(concepts, "./data/conceptx_concepts.pt")
 
     def get_concepts(self):
         return self.concepts

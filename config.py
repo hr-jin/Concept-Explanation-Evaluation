@@ -24,10 +24,12 @@ cfg = {
         'remove_parallel': 1,
         'tied_enc_dec': 0,
         "epoch": 1,
+        'use_bias_d': 1,
+        'tied_enc_dec': 0,
 
         ## ConceptX
         "ConceptX_max_token": 5000,
-        "ConceptX_clusters": 10,
+        "ConceptX_clusters": 1000,
         
         ## Training
         "num_batches": None,
@@ -55,9 +57,9 @@ cfg = {
         ## dataset
         "num_tokens": int(1363348000), # How many tokens do you want to use for training
         "seq_len": 128,
-        "tokenized":True, # Whether the training data has been tokenized
+        "tokenized":False, # Whether the training data has been tokenized
         "data_from_hf":True, # Whether the dataset is downloaded from huggingface
-        
+        'dataloader': 'ae',
         
         
         ## Which layer and part of the model should be explained?

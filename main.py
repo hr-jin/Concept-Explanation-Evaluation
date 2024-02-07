@@ -48,6 +48,7 @@ def main():
     
     concepts = extractor.get_concepts()
     print('concept vectors:', concepts)
+    print('concepts.shape:', concepts.shape)
     
         
     # cfg['data_dir'] = "/root/autodl-tmp/haoran/SparseAE-pythia-pile/data/pile_neel/"
@@ -111,9 +112,10 @@ def main():
     #     allow_pickle=True
     # )
     
-    concept_idxs = [i+0*128 for i in range(128)]
+    # concept_idxs = [i+0*128 for i in range(128)]
+    concept_idxs = [i+0*250 for i in range(250)]
+    # concept_idxs = [0]
     
-    # concept_idxs = concept_idxs[0:2]
     # concept_idxs = concept_idxs[0:7] + concept_idxs[20:27] + concept_idxs[40:47]
     # concept_idxs = concept_idxs[0:20]
     # concept_idxs = concept_idxs[20:40]
@@ -121,7 +123,7 @@ def main():
         
     token_list = []
     origin_token_list = []
-    for _ in range(5):
+    for _ in range(5): # 之前把batch_size从32768改为8192，所以测ae concept要把5改回20，或者batch_size改回32768。
         tokens, origin_tokens = dataloader.get_processed_random_batch()
         token_list.append(tokens)
         origin_token_list.append(origin_tokens)
@@ -131,7 +133,8 @@ def main():
     evaluator_dict = dict()
     
     cfg['evaluator'] = 'faithfulness'
-    for disturb in ['gradient','replace','ablation','replace-ablation']: # 'gradient','replace','ablation','replace-ablation'
+    # for disturb in ['gradient','replace','ablation','replace-ablation']: # 'gradient','replace','ablation','replace-ablation'
+    for disturb in ['replace','ablation','replace-ablation']: # 'gradient','replace','ablation','replace-ablation'
         for measure_obj in ['pred_logit','logits', 'loss']: # 'pred_logit','logits', 'loss'
             if measure_obj == 'logits':
                 for corr_func in ['KL_div', 'pearson']:
@@ -165,79 +168,79 @@ def main():
                     class_idx=7000, 
                     logits_corr_topk=None,
                 )
-    cfg['evaluator'] = 'itc'
-    evaluator_dict.update({
-        'itc_emb_dist': evaluator_factory(
-            cfg, 
-            extractor.activation_func, 
-            model,
-            concept=None, 
-            concept_idx=None, 
-            pmi_type='emb_dist', # ['uci', 'umass', 'silhouette']
-        ),
-        'itc_emb_cos': evaluator_factory(
-            cfg, 
-            extractor.activation_func, 
-            model,
-            concept=None, 
-            concept_idx=None, 
-            pmi_type='emb_cos', # ['uci', 'umass', 'silhouette']
-        ),
-        'itc_silhouette': evaluator_factory(
-            cfg, 
-            extractor.activation_func, 
-            model,
-            concept=None, 
-            concept_idx=None, 
-            pmi_type='silhouette', # ['uci', 'umass', 'silhouette']
-        ),
-        'itc_uci': evaluator_factory(
-            cfg, 
-            extractor.activation_func, 
-            model,
-            concept=None, 
-            concept_idx=None, 
-            pmi_type='uci', # ['uci', 'umass', 'silhouette']
-        ),
-        'itc_umass': evaluator_factory(
-            cfg, 
-            extractor.activation_func, 
-            model,
-            concept=None, 
-            concept_idx=None, 
-            pmi_type='umass', # ['uci', 'umass', 'silhouette']
-        ),
+    # cfg['evaluator'] = 'itc'
+    # evaluator_dict.update({
+    #     'itc_emb_dist': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=None, 
+    #         concept_idx=None, 
+    #         pmi_type='emb_dist', # ['uci', 'umass', 'silhouette']
+    #     ),
+    #     'itc_emb_cos': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=None, 
+    #         concept_idx=None, 
+    #         pmi_type='emb_cos', # ['uci', 'umass', 'silhouette']
+    #     ),
+    #     'itc_silhouette': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=None, 
+    #         concept_idx=None, 
+    #         pmi_type='silhouette', # ['uci', 'umass', 'silhouette']
+    #     ),
+    #     'itc_uci': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=None, 
+    #         concept_idx=None, 
+    #         pmi_type='uci', # ['uci', 'umass', 'silhouette']
+    #     ),
+    #     'itc_umass': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=None, 
+    #         concept_idx=None, 
+    #         pmi_type='umass', # ['uci', 'umass', 'silhouette']
+    #     ),
         
-    })
+    # })
     
-    cfg['evaluator'] = 'otc'
-    evaluator_dict.update({
-        'otc_emb_dist': evaluator_factory(
-            cfg, 
-            extractor.activation_func, 
-            model,
-            concept=None, 
-            concept_idx=None, 
-            pmi_type='emb_dist', # ['uci', 'umass', 'silhouette']
-        ),
-        'otc_emb_cos': evaluator_factory(
-            cfg, 
-            extractor.activation_func, 
-            model,
-            concept=None, 
-            concept_idx=None, 
-            pmi_type='emb_cos', # ['uci', 'umass', 'silhouette']
-        ),
-        'otc_silhouette': evaluator_factory(
-            cfg, 
-            extractor.activation_func, 
-            model,
-            concept=None, 
-            concept_idx=None, 
-            pmi_type='silhouette', # ['uci', 'umass', 'silhouette']
-        ),
+    # cfg['evaluator'] = 'otc'
+    # evaluator_dict.update({
+    #     'otc_emb_dist': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=None, 
+    #         concept_idx=None, 
+    #         pmi_type='emb_dist', # ['uci', 'umass', 'silhouette']
+    #     ),
+    #     'otc_emb_cos': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=None, 
+    #         concept_idx=None, 
+    #         pmi_type='emb_cos', # ['uci', 'umass', 'silhouette']
+    #     ),
+    #     'otc_silhouette': evaluator_factory(
+    #         cfg, 
+    #         extractor.activation_func, 
+    #         model,
+    #         concept=None, 
+    #         concept_idx=None, 
+    #         pmi_type='silhouette', # ['uci', 'umass', 'silhouette']
+    #     ),
         
-    })
+    # })
     
     # concept_idxs = concept_idxs
     # metric_dict = dict()

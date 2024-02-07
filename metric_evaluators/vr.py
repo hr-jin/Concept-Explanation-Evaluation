@@ -72,6 +72,13 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         
         dtime = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
         
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_metrics.npy',metrics)
+        
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_tokens.npy',np.array(topic_tokens))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_idxs.npy',np.array(topic_idxs))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_pref_tokens.npy',np.array(most_preferred_tokens))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'concept_idxs.npy',np.array(concept_idxs))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_dfs.npy',np.array(origin_dfs))
         
         pearsonr_list = []
         pearsonr_p_list = []
@@ -109,13 +116,7 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'kendalltau_metrics.npy',kendalltau_metrics)
         # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'pearson_p_metrics.npy',pearson_p_metrics)
         np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'kendall_p_metrics.npy',kendall_p_metrics)
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_metrics.npy',metrics)
         
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_tokens.npy',np.array(topic_tokens))
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_idxs.npy',np.array(topic_idxs))
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_pref_tokens.npy',np.array(most_preferred_tokens))
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'concept_idxs.npy',np.array(concept_idxs))
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_dfs.npy',np.array(origin_dfs))
         
         # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'cosine_sim_metrics.npy',cosine_sim_metrics)
         

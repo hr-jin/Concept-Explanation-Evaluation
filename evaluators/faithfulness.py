@@ -207,6 +207,9 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         
         concept_acts = concept_acts[:,:metrics.shape[1]]
         
+        origin_acts = concept_acts
+        concept_acts = concept_acts * (concept_acts > 0.)
+        
         pos_act_metric = metrics[concept_acts>0].mean()
         
         pos_act_metric_0min = metrics[concept_acts<=0*concept_acts.max()].mean()
@@ -226,6 +229,8 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         # pos_act_metric_0max = metrics[concept_acts>0.0*concept_acts.max()].mean()
         
         weighted_metric = (metrics * concept_acts).mean()
+        
+        weighted_origin_metric = (metrics * origin_acts).mean()
     
         normed_concept_acts = concept_acts / torch.tensor(concept_acts).norm(p=1, keepdim=True).numpy()
         weighted_normed_metric = (metrics * normed_concept_acts).sum()
@@ -239,11 +244,12 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
             self.corr_func, 
             self.logits_corr_topk
         ))    
-        logger.info('avg where concept activation > 0: {:4E}'.format(pos_act_metric))    
+        logger.info('avg where concept activation < 0: {:4E}'.format(pos_act_metric_0min))    
         # logger.info('avg where concept activation > 0.8 max: {:4E}'.format(pos_act_metric_08max))  
         # logger.info('avg where concept activation > 0.9 max: {:4E}'.format(pos_act_metric_09max))  
         logger.info('max activation: {:4E}'.format(concept_acts.max()))    
         logger.info('weighted avg by concept activation: {:4E}'.format(weighted_metric))    
+        logger.info('weighted avg by origin concept activation: {:4E}'.format(weighted_origin_metric))  
         logger.info('weighted sum by 1-normed concept activation: {:4E}'.format(weighted_normed_metric))  
         logger.info('weighted sum by softmaxed concept activation: {:4E}'.format(weighted_softmax_metric))      
         # logger.info('(avg where concept activation > 0.8 max) - (avg where concept activation > 0): {:4E}'.format(pos_act_metric_08max - pos_act_metric))  

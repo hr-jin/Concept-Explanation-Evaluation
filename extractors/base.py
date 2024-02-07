@@ -13,7 +13,7 @@ class BaseExtractor(metaclass=ABCMeta):
     def activation_func(self, **kwargs):
         pass
     
-    def load_from_file():
+    def load_from_file(*args,**kwargs):
         pass
     
     @abstractclassmethod

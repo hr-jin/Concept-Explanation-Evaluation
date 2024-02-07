@@ -11,11 +11,11 @@ class ConceptXData(AbstractDataset):
 
     @classmethod
     def code(cls):
-        return "conceptx_data"
+        return "conceptx"
 
     def load_dataset(self):
         os.system("pwd")
         with open("./data/text.in") as f:
             raw_texts = f.readlines()
-        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-70m")
+        tokenizer = AutoTokenizer.from_pretrained(self.cfg['model_dir'])
         self.data = tokenizer(raw_texts)["input_ids"]
