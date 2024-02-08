@@ -220,31 +220,12 @@ class AutoEncoder(nn.Module, BaseExtractor):
             l0_norm = sum(l0_norms) / len(l0_norms)
             return l0_norm
         
-    # @torch.no_grad()
-    # def activation_func(self, tokens, model, concept=None, concept_idx=None):
-    #     _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
-    #     hidden_states = cache[self.cfg["act_name"]]
-    
-        
-    #     assert tokens.shape[1] == hidden_states.shape[1]
-        
-    #     if self.cfg['site'] == 'mlp_post':
-    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_mlp'])
-    #     else: 
-    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
-            
-    #     if concept_idx == None:
-    #         results = self.forward(hidden_states)[1]
-    #     else:
-    #         hidden_acts = self.forward(hidden_states)[1]
-    #         results = hidden_acts[:, concept_idx]
-    #     return results
-    
     @torch.no_grad()
-    def activation_func(self, tokens, model, concept=None, concept_idx=None):    
+    def activation_func(self, tokens, model, concept=None, concept_idx=None):
         _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
         hidden_states = cache[self.cfg["act_name"]]
     
+        
         assert tokens.shape[1] == hidden_states.shape[1]
         
         if self.cfg['site'] == 'mlp_post':
@@ -253,9 +234,28 @@ class AutoEncoder(nn.Module, BaseExtractor):
             hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
             
         if concept_idx == None:
-            results = torch.cosine_similarity(hidden_states, concept, dim=-1)
-            # results = results * (results > 0.)
+            results = self.forward(hidden_states)[1]
         else:
-            results = torch.cosine_similarity(hidden_states, self.concepts[concept_idx, :], dim=-1)
-            # results = results * (results > 0.)
+            hidden_acts = self.forward(hidden_states)[1]
+            results = hidden_acts[:, concept_idx]
         return results
+    
+    # @torch.no_grad()
+    # def activation_func(self, tokens, model, concept=None, concept_idx=None):    
+    #     _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
+    #     hidden_states = cache[self.cfg["act_name"]]
+    
+    #     assert tokens.shape[1] == hidden_states.shape[1]
+        
+    #     if self.cfg['site'] == 'mlp_post':
+    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_mlp'])
+    #     else: 
+    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
+            
+    #     if concept_idx == None:
+    #         results = torch.cosine_similarity(hidden_states, concept, dim=-1)
+    #         # results = results * (results > 0.)
+    #     else:
+    #         results = torch.cosine_similarity(hidden_states, self.concepts[concept_idx, :], dim=-1)
+    #         # results = results * (results > 0.)
+    #     return results

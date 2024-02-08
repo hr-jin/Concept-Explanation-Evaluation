@@ -70,12 +70,19 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                     elif self.measure_obj == 'loss':
                         grads, hidden_state = self.get_loss_gradient(tokens)
                         metric = -(grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
+                        # grads = torch.tensor(grads)
+                        # metric = -torch.cosine_similarity(grads, self.concept.cpu().reshape([1,1,-1]), dim=-1).squeeze().numpy() # minibatch * maxlen
+                        
                     elif self.measure_obj == 'class_logit':
                         grads, hidden_state = self.get_class_logit_gradient(tokens, self.class_idx)
                         metric = (grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
+                        # grads = torch.tensor(grads)
+                        # metric = torch.cosine_similarity(grads, self.concept.cpu().reshape([1,1,-1]), dim=-1).squeeze().numpy() # minibatch * maxlen
                     elif self.measure_obj == 'pred_logit':
                         grads, hidden_state = self.get_class_logit_gradient(tokens, -1)
                         metric = (grads @ self.concept.cpu().numpy().T).squeeze() # minibatch * maxlen
+                        # grads = torch.tensor(grads)
+                        # metric = torch.cosine_similarity(grads, self.concept.cpu().reshape([1,1,-1]), dim=-1).squeeze().numpy() # minibatch * maxlen
                     metric = metric[:,:-1]
                     optimizer.zero_grad()
                     
@@ -211,6 +218,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         concept_acts = concept_acts * (concept_acts > 0.)
         
         pos_act_metric = metrics[concept_acts>0].mean()
+    
         
         pos_act_metric_0min = metrics[concept_acts<=0*concept_acts.max()].mean()
         

@@ -95,7 +95,7 @@ def main():
     #    3769]
     
     # 200 1
-    # concept_idxs = [3676, 1647, 3046, 2810, 1519,  763, 3264,  884,  740, 2036,   24,       3599, 3610,  310,   49,  217, 2594,  405, 3431,  978,  619, 3936,       3116, 2600, 3778,   81, 2877,  413,  263,  496,  982, 1583, 3161,        497,  843, 2797,  379, 3253,  329, 2541, 1863, 1956, 3604, 1996,        316, 3326,  545,  519, 1092, 1676, 2087,  265, 2035, 2426, 2027,         28, 3307, 4073,  448, 3992, 1032, 1398,  947, 1571,  750, 1022,       2162, 1792, 1717,  259, 2130,  137,  966, 3545, 1529, 2851,  956,       1066,  484,  375, 1297,  540, 3349, 2472, 1537, 3328, 3510, 1891,       3820, 2972, 2030, 3455, 3323, 1160, 1774, 2308,  449, 3059, 2110,       3002,  885, 3029, 2654, 2634, 3699, 3103,  773, 2400,  147, 2535,       2074, 3420,  388, 3503, 3847, 1661, 2981, 1017, 1246, 4011,  282,        660,  844, 3880, 3865, 1109, 1481, 1548, 2755, 1078, 1937, 1460,       3708,  820, 2277, 2609, 1070,  200, 3978,  250, 2907, 1912,  414,       1035, 1669, 2616, 2040, 2583,  466, 2310, 1013, 3393, 2320,  254,       2831,  332, 3428,  337, 3709, 3473, 2734, 1081,   10, 1749, 2699,       2849, 3575, 1088, 1837, 1514, 2968, 1356, 3343, 4080, 3104, 2250,        693,  926, 1706,  106, 2791, 1868, 3877, 2858, 2177, 2286, 2436,       3758, 1363,  430, 2532, 1903, 2597,  616, 2682, 1014, 1739,  244,       2700, 2137]
+    concept_idxs = [3676, 1647, 3046, 2810, 1519,  763, 3264,  884,  740, 2036,   24,       3599, 3610,  310,   49,  217, 2594,  405, 3431,  978,  619, 3936,       3116, 2600, 3778,   81, 2877,  413,  263,  496,  982, 1583, 3161,        497,  843, 2797,  379, 3253,  329, 2541, 1863, 1956, 3604, 1996,        316, 3326,  545,  519, 1092, 1676, 2087,  265, 2035, 2426, 2027,         28, 3307, 4073,  448, 3992, 1032, 1398,  947, 1571,  750, 1022,       2162, 1792, 1717,  259, 2130,  137,  966, 3545, 1529, 2851,  956,       1066,  484,  375, 1297,  540, 3349, 2472, 1537, 3328, 3510, 1891,       3820, 2972, 2030, 3455, 3323, 1160, 1774, 2308,  449, 3059, 2110,       3002,  885, 3029, 2654, 2634, 3699, 3103,  773, 2400,  147, 2535,       2074, 3420,  388, 3503, 3847, 1661, 2981, 1017, 1246, 4011,  282,        660,  844, 3880, 3865, 1109, 1481, 1548, 2755, 1078, 1937, 1460,       3708,  820, 2277, 2609, 1070,  200, 3978,  250, 2907, 1912,  414,       1035, 1669, 2616, 2040, 2583,  466, 2310, 1013, 3393, 2320,  254,       2831,  332, 3428,  337, 3709, 3473, 2734, 1081,   10, 1749, 2699,       2849, 3575, 1088, 1837, 1514, 2968, 1356, 3343, 4080, 3104, 2250,        693,  926, 1706,  106, 2791, 1868, 3877, 2858, 2177, 2286, 2436,       3758, 1363,  430, 2532, 1903, 2597,  616, 2682, 1014, 1739,  244,       2700, 2137]
     
     # # 200 2
     # concept_idxs = [2841,  338, 1344, 1997, 2641, 2866, 3344, 3689, 2889, 3066, 3233,3005, 3550, 4091,  357, 1215, 1983, 1921, 3669, 3912, 3450, 1073,       3076, 3851, 2735, 1944,  590, 3961, 2245, 3488, 4040, 2540, 3845,       1148, 1347,  236, 2656, 2257, 3624, 3976, 1927, 2926, 4019,  336,       1829, 1812, 2658, 3134, 4003, 2398, 1180, 1624, 2904, 3477, 2350,       4043,  565, 2343, 1813, 2586, 2832, 2888, 1594, 2695, 2590,  711,        729, 1498,  297, 2763, 2872, 1916, 3324, 3413,  159,  633,  389,       1699, 2258,  856, 2413,  700, 1691, 1138, 3003,   32,  213, 3836,        274, 1469, 1839, 2345, 1914,  114, 1834, 1090, 2191,  251, 1623,       1429, 3179, 3996,  650, 2857, 3959,  979, 2777, 2409,   71,  118,       3260, 2140,  258,  469, 3466,  386, 2528,  792, 2085,  601,  380,       1110, 1076, 3026,   18, 2642, 2560, 3119, 3422, 3848, 3199, 1705,       1029, 1249, 3442,  140, 2935, 2358,  925, 1502, 2662, 2124, 1058,        553, 3791, 3775, 3218, 3562, 2235, 3513,  814,  520, 1867, 2219,       3342,   35, 1918, 1378, 4083, 3554,  701, 1852, 1856, 3701, 3197,        187, 3340, 2925, 1826,  975, 3292, 1111, 1177, 2238, 2263, 1771,       2914,  262, 2048, 2248,  266,  811, 2864, 3740, 3405, 1643, 2938,       2133, 1419,  418,  411, 1784, 2816, 2121, 1374, 3024, 2473, 3153,        853, 2218]
@@ -113,7 +113,8 @@ def main():
     # )
     
     # concept_idxs = [i+0*128 for i in range(128)]
-    concept_idxs = [i+0*250 for i in range(250)]
+    # concept_idxs = [i+0*200 for i in range(200)]
+    # concept_idxs = [i+0*250 for i in range(250)]
     # concept_idxs = [0]
     
     # concept_idxs = concept_idxs[0:7] + concept_idxs[20:27] + concept_idxs[40:47]
@@ -132,115 +133,115 @@ def main():
     
     evaluator_dict = dict()
     
-    cfg['evaluator'] = 'faithfulness'
+    # cfg['evaluator'] = 'faithfulness'
     # for disturb in ['gradient','replace','ablation','replace-ablation']: # 'gradient','replace','ablation','replace-ablation'
-    for disturb in ['replace','ablation','replace-ablation']: # 'gradient','replace','ablation','replace-ablation'
-        for measure_obj in ['pred_logit','logits', 'loss']: # 'pred_logit','logits', 'loss'
-            if measure_obj == 'logits':
-                for corr_func in ['KL_div', 'pearson']:
-                    if disturb == 'gradient':
-                        continue
-                    for topk in [1000]:
-                        extractor_str = disturb + '_' + measure_obj + '_' + corr_func + '_top' + str(topk)
-                        evaluator_dict[extractor_str] = evaluator_factory(
-                        cfg, 
-                        extractor.activation_func, 
-                        model,
-                        concept=None, 
-                        concept_idx=None, 
-                        disturb=disturb, # ['ablation', 'gradient', 'replace']
-                        measure_obj=measure_obj, # ['loss', 'class_logit', 'logits']
-                        corr_func=corr_func, # ['pearson', 'KL_div', 'openai_var']
-                        class_idx=7000, 
-                        logits_corr_topk=topk,
-                        )
-            else:
-                extractor_str = disturb + '_' + measure_obj
-                evaluator_dict[extractor_str] = evaluator_factory(
-                    cfg, 
-                    extractor.activation_func, 
-                    model,
-                    concept=None, 
-                    concept_idx=None, 
-                    disturb=disturb, # ['ablation', 'gradient', 'replace']
-                    measure_obj=measure_obj, # ['loss', 'class_logit', 'logits']
-                    corr_func='pearson', # ['pearson', 'KL_div', 'openai_var']
-                    class_idx=7000, 
-                    logits_corr_topk=None,
-                )
-    # cfg['evaluator'] = 'itc'
-    # evaluator_dict.update({
-    #     'itc_emb_dist': evaluator_factory(
-    #         cfg, 
-    #         extractor.activation_func, 
-    #         model,
-    #         concept=None, 
-    #         concept_idx=None, 
-    #         pmi_type='emb_dist', # ['uci', 'umass', 'silhouette']
-    #     ),
-    #     'itc_emb_cos': evaluator_factory(
-    #         cfg, 
-    #         extractor.activation_func, 
-    #         model,
-    #         concept=None, 
-    #         concept_idx=None, 
-    #         pmi_type='emb_cos', # ['uci', 'umass', 'silhouette']
-    #     ),
-    #     'itc_silhouette': evaluator_factory(
-    #         cfg, 
-    #         extractor.activation_func, 
-    #         model,
-    #         concept=None, 
-    #         concept_idx=None, 
-    #         pmi_type='silhouette', # ['uci', 'umass', 'silhouette']
-    #     ),
-    #     'itc_uci': evaluator_factory(
-    #         cfg, 
-    #         extractor.activation_func, 
-    #         model,
-    #         concept=None, 
-    #         concept_idx=None, 
-    #         pmi_type='uci', # ['uci', 'umass', 'silhouette']
-    #     ),
-    #     'itc_umass': evaluator_factory(
-    #         cfg, 
-    #         extractor.activation_func, 
-    #         model,
-    #         concept=None, 
-    #         concept_idx=None, 
-    #         pmi_type='umass', # ['uci', 'umass', 'silhouette']
-    #     ),
-        
-    # })
+    #     for measure_obj in ['loss','pred_logit','logits']: # 'pred_logit','logits', 'loss'
+    #         if measure_obj == 'logits':
+    #             for corr_func in ['KL_div', 'pearson']:
+    #                 if disturb == 'gradient':
+    #                     continue
+    #                 for topk in [1000]:
+    #                     extractor_str = disturb + '_' + measure_obj + '_' + corr_func + '_top' + str(topk)
+    #                     evaluator_dict[extractor_str] = evaluator_factory(
+    #                     cfg, 
+    #                     extractor.activation_func, 
+    #                     model,
+    #                     concept=None, 
+    #                     concept_idx=None, 
+    #                     disturb=disturb, # ['ablation', 'gradient', 'replace']
+    #                     measure_obj=measure_obj, # ['loss', 'class_logit', 'logits']
+    #                     corr_func=corr_func, # ['pearson', 'KL_div', 'openai_var']
+    #                     class_idx=7000, 
+    #                     logits_corr_topk=topk,
+    #                     )
+    #         else:
+    #             extractor_str = disturb + '_' + measure_obj
+    #             evaluator_dict[extractor_str] = evaluator_factory(
+    #                 cfg, 
+    #                 extractor.activation_func, 
+    #                 model,
+    #                 concept=None, 
+    #                 concept_idx=None, 
+    #                 disturb=disturb, # ['ablation', 'gradient', 'replace']
+    #                 measure_obj=measure_obj, # ['loss', 'class_logit', 'logits']
+    #                 corr_func='pearson', # ['pearson', 'KL_div', 'openai_var']
+    #                 class_idx=7000, 
+    #                 logits_corr_topk=None,
+    #             )
     
-    # cfg['evaluator'] = 'otc'
-    # evaluator_dict.update({
-    #     'otc_emb_dist': evaluator_factory(
-    #         cfg, 
-    #         extractor.activation_func, 
-    #         model,
-    #         concept=None, 
-    #         concept_idx=None, 
-    #         pmi_type='emb_dist', # ['uci', 'umass', 'silhouette']
-    #     ),
-    #     'otc_emb_cos': evaluator_factory(
-    #         cfg, 
-    #         extractor.activation_func, 
-    #         model,
-    #         concept=None, 
-    #         concept_idx=None, 
-    #         pmi_type='emb_cos', # ['uci', 'umass', 'silhouette']
-    #     ),
-    #     'otc_silhouette': evaluator_factory(
-    #         cfg, 
-    #         extractor.activation_func, 
-    #         model,
-    #         concept=None, 
-    #         concept_idx=None, 
-    #         pmi_type='silhouette', # ['uci', 'umass', 'silhouette']
-    #     ),
+    cfg['evaluator'] = 'itc'
+    evaluator_dict.update({
+        'itc_emb_dist': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=None, 
+            concept_idx=None, 
+            pmi_type='emb_dist', # ['uci', 'umass', 'silhouette']
+        ),
+        'itc_emb_cos': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=None, 
+            concept_idx=None, 
+            pmi_type='emb_cos', # ['uci', 'umass', 'silhouette']
+        ),
+        'itc_silhouette': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=None, 
+            concept_idx=None, 
+            pmi_type='silhouette', # ['uci', 'umass', 'silhouette']
+        ),
+        'itc_uci': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=None, 
+            concept_idx=None, 
+            pmi_type='uci', # ['uci', 'umass', 'silhouette']
+        ),
+        'itc_umass': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=None, 
+            concept_idx=None, 
+            pmi_type='umass', # ['uci', 'umass', 'silhouette']
+        ),
         
-    # })
+    })
+    
+    cfg['evaluator'] = 'otc'
+    evaluator_dict.update({
+        'otc_emb_dist': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=None, 
+            concept_idx=None, 
+            pmi_type='emb_dist', # ['uci', 'umass', 'silhouette']
+        ),
+        'otc_emb_cos': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=None, 
+            concept_idx=None, 
+            pmi_type='emb_cos', # ['uci', 'umass', 'silhouette']
+        ),
+        'otc_silhouette': evaluator_factory(
+            cfg, 
+            extractor.activation_func, 
+            model,
+            concept=None, 
+            concept_idx=None, 
+            pmi_type='silhouette', # ['uci', 'umass', 'silhouette']
+        ),
+        
+    })
     
     # concept_idxs = concept_idxs
     # metric_dict = dict()

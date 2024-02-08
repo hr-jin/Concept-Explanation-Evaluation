@@ -146,6 +146,8 @@ class BaseEvaluator(metaclass=ABCMeta):
             max_indices = torch.argmax(logits, dim=-1)
             logit = torch.gather(logits, dim=-1, index=max_indices.unsqueeze(-1)).squeeze()
             logit_disturbed = torch.gather(logits_disturbed, dim=-1, index=max_indices.unsqueeze(-1)).squeeze()
+            # logit = torch.gather(torch.softmax(logits, dim=-1), dim=-1, index=max_indices.unsqueeze(-1)).squeeze()
+            # logit_disturbed = torch.gather(torch.softmax(logits_disturbed, dim=-1), dim=-1, index=max_indices.unsqueeze(-1)).squeeze()
         else:
             logit = logits[:,:,class_idx]
             logit_disturbed = logits_disturbed[:,:,class_idx]
@@ -264,6 +266,9 @@ class BaseEvaluator(metaclass=ABCMeta):
             )
         elif corr_func == 'KL_div':
             corr = -F.kl_div(distributed_softmax.log(), origin_softmax, reduction='none').sum(-1)
+            # y_avg_softmax = torch.softmax((distributed_softmax + origin_softmax) / 2, dim=-1) + 1e-10
+            # corr = 1 / (F.kl_div(y_avg_softmax.log(), origin_softmax, reduction='none') + F.kl_div(y_avg_softmax.log(), distributed_softmax, reduction='none')).sum(-1) / 2
+            
         elif corr_func == 'openai_var':
             corr = 1 - (distributed_softmax - origin_softmax).square().mean(-1) / torch.var(origin_softmax, dim=-1)
         else:
@@ -386,10 +391,10 @@ class BaseEvaluator(metaclass=ABCMeta):
         df_final = df_final[:5]
         origin_df = df_final
         max_value = df_final['imp'].values.max()
-        df_final = df_final[df_final['imp']>=max_value*0.2]
+        # df_final = df_final[df_final['imp']>=max_value*0.2]
         df_most_critical_tokens = df_final['token'].apply(lambda x:x.strip().lower()).values
         df_most_critical_token_idxs = df_final['token_idx_x']
         most_critical_token_idxs = df_most_critical_token_idxs[df_most_critical_tokens != '']
         most_critical_tokens = df_most_critical_tokens[df_most_critical_tokens != '']
         logger.info('The most critical tokens(after removing the spaces and changing to lower case): \n{}'.format(' '.join(most_critical_tokens)))
-        return most_critical_tokens, most_critical_token_idxs, origin_df
+        return most_critical_tokens, most_critical_token_idxs, origin_df, df_most_critical_token_idxs
