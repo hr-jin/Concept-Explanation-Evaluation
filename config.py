@@ -28,6 +28,7 @@ cfg = {
         ## ConceptX
         "ConceptX_max_token": 5000,
         "ConceptX_clusters": 10,
+        "clustering_k": 1000,
         
         ## Training
         "num_batches": None,

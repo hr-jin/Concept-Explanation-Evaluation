@@ -1,7 +1,7 @@
 from .tcav import TCAVDataloader
 from .ae import AEDataloader
 from .conceptx import ConceptXDataloader
-
+from .conceptx_naive import ConceptXNaiveDataloader
 
 
 DATALOADERS = {
@@ -9,6 +9,7 @@ DATALOADERS = {
     AEDataloader.code(): AEDataloader,
     ConceptXDataloader.code(): ConceptXDataloader,
     TCAVDataloader.code(): TCAVDataloader,
+    ConceptXNaiveDataloader.code(): ConceptXNaiveDataloader,
 }
 
 
