@@ -132,7 +132,7 @@ def arg_parse_update_cfg(default_cfg, parser):
     cfg = dict(default_cfg)
     for key, value in default_cfg.items():
         if key == 'extractor':
-            parser.add_argument(f"--{key}", choices=["ae", "tcav", "spine", "convex_optim", "conceptx_ori"], default="ae")
+            parser.add_argument(f"--{key}", choices=["ae", "tcav", "neuron", "conceptx", "conceptx_ori"], default="ae")
         elif key == 'model_to_interpret':
             parser.add_argument(f"--{key}", choices=["llama-2-7b-chat", "pythia-70m", 'gpt2-small'], default="pythia-70m")
         elif type(value) == bool:
