@@ -8,7 +8,6 @@ EXTRACTORS = {
     AutoEncoder.code(): AutoEncoder,
     TCAVExtractor.code(): TCAVExtractor,
     ConceptX.code(): ConceptX,
-    # IntrinsicProbingExtractor.code(): IntrinsicProbingExtractor,
     Neuron.code(): Neuron,
     ConceptXOri.code(): ConceptXOri,
 }

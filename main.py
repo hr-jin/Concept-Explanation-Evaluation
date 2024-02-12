@@ -48,6 +48,7 @@ def main():
     
     concepts = extractor.get_concepts()
     print('concept vectors:', concepts)
+    print('concepts.shape:', concepts.shape)
     
         
     # cfg['data_dir'] = "/root/autodl-tmp/haoran/SparseAE-pythia-pile/data/pile_neel/"
@@ -100,7 +101,7 @@ def main():
     # concept_idxs = [2841,  338, 1344, 1997, 2641, 2866, 3344, 3689, 2889, 3066, 3233,3005, 3550, 4091,  357, 1215, 1983, 1921, 3669, 3912, 3450, 1073,       3076, 3851, 2735, 1944,  590, 3961, 2245, 3488, 4040, 2540, 3845,       1148, 1347,  236, 2656, 2257, 3624, 3976, 1927, 2926, 4019,  336,       1829, 1812, 2658, 3134, 4003, 2398, 1180, 1624, 2904, 3477, 2350,       4043,  565, 2343, 1813, 2586, 2832, 2888, 1594, 2695, 2590,  711,        729, 1498,  297, 2763, 2872, 1916, 3324, 3413,  159,  633,  389,       1699, 2258,  856, 2413,  700, 1691, 1138, 3003,   32,  213, 3836,        274, 1469, 1839, 2345, 1914,  114, 1834, 1090, 2191,  251, 1623,       1429, 3179, 3996,  650, 2857, 3959,  979, 2777, 2409,   71,  118,       3260, 2140,  258,  469, 3466,  386, 2528,  792, 2085,  601,  380,       1110, 1076, 3026,   18, 2642, 2560, 3119, 3422, 3848, 3199, 1705,       1029, 1249, 3442,  140, 2935, 2358,  925, 1502, 2662, 2124, 1058,        553, 3791, 3775, 3218, 3562, 2235, 3513,  814,  520, 1867, 2219,       3342,   35, 1918, 1378, 4083, 3554,  701, 1852, 1856, 3701, 3197,        187, 3340, 2925, 1826,  975, 3292, 1111, 1177, 2238, 2263, 1771,       2914,  262, 2048, 2248,  266,  811, 2864, 3740, 3405, 1643, 2938,       2133, 1419,  418,  411, 1784, 2816, 2121, 1374, 3024, 2473, 3153,        853, 2218]
     
     # # 200 3
-    # concept_idxs = [2538,  706, 2903, 3829,  481,  747, 1414, 3681, 1616, 2633, 3052,       2099, 3693,  170, 3914, 3501, 1585, 1226,   99, 3892, 3594,  791,       1445, 2704,  858, 2197, 1525,  363, 3295,  977, 1930, 2372, 3028,       3748, 1061, 3137,  901, 1511, 1368, 2878, 2265, 2563, 1520, 2196,         17, 2901, 3090,   90, 2147, 2663, 3618, 1877, 2063,  799, 2821,       3074, 1113, 1034, 3214, 1260, 3390, 1574,  179, 1115, 1504, 1416,       3265, 1785,  557,  493, 2474,  790, 4006,   75, 1656,   70, 3947,       1638, 1958, 3421,  874,  959,  214, 1607, 1882, 3084, 1390, 1901,        345, 1966, 2517, 1622, 3631, 1055,  238,  696, 3184, 1364, 1139,       1642,  354,  862, 1874, 1096, 2822, 2859,  318, 3861,  882, 1917,       3573, 3247,  760, 3055, 2463, 1158, 4050, 3508, 1027,  442, 2684,        580, 3641, 1383, 1738,  312, 2227,  905, 2776,  498, 4020, 3529,       1701, 1024,  997, 2268, 1428, 3261, 2706, 3350, 3974,  270, 3020,        699, 2902, 2014, 3332, 1098, 1841,   12, 3514,  591, 2603, 2255,       1241,  424, 3039, 1708,  551, 1620, 2462, 2129,  981, 3788, 3062,        886, 2056,  732, 1106, 2579, 3945, 3989,  757, 2732, 2199, 2120,       3170,  678, 2607,  483, 2522, 2145, 2660,  185, 1204, 2939,  286,       1961, 2249, 3896,  197, 2052, 3940, 3387, 3057, 1721, 2174,  212,       3317, 2924]
+    concept_idxs = [2538,  706, 2903, 3829,  481,  747, 1414, 3681, 1616, 2633, 3052,       2099, 3693,  170, 3914, 3501, 1585, 1226,   99, 3892, 3594,  791,       1445, 2704,  858, 2197, 1525,  363, 3295,  977, 1930, 2372, 3028,       3748, 1061, 3137,  901, 1511, 1368, 2878, 2265, 2563, 1520, 2196,         17, 2901, 3090,   90, 2147, 2663, 3618, 1877, 2063,  799, 2821,       3074, 1113, 1034, 3214, 1260, 3390, 1574,  179, 1115, 1504, 1416,       3265, 1785,  557,  493, 2474,  790, 4006,   75, 1656,   70, 3947,       1638, 1958, 3421,  874,  959,  214, 1607, 1882, 3084, 1390, 1901,        345, 1966, 2517, 1622, 3631, 1055,  238,  696, 3184, 1364, 1139,       1642,  354,  862, 1874, 1096, 2822, 2859,  318, 3861,  882, 1917,       3573, 3247,  760, 3055, 2463, 1158, 4050, 3508, 1027,  442, 2684,        580, 3641, 1383, 1738,  312, 2227,  905, 2776,  498, 4020, 3529,       1701, 1024,  997, 2268, 1428, 3261, 2706, 3350, 3974,  270, 3020,        699, 2902, 2014, 3332, 1098, 1841,   12, 3514,  591, 2603, 2255,       1241,  424, 3039, 1708,  551, 1620, 2462, 2129,  981, 3788, 3062,        886, 2056,  732, 1106, 2579, 3945, 3989,  757, 2732, 2199, 2120,       3170,  678, 2607,  483, 2522, 2145, 2660,  185, 1204, 2939,  286,       1961, 2249, 3896,  197, 2052, 3940, 3387, 3057, 1721, 2174,  212,       3317, 2924]
     
     # most_imp_tokens = np.load(
     #     '/root/autodl-tmp/haoran/SparseAE-pythia-pile/codebase/data/output/vr_data/200concepts_uci5tokens_1_most_imp_tokens.npy',
@@ -111,17 +112,19 @@ def main():
     #     allow_pickle=True
     # )
     
-    concept_idxs = [i+0*128 for i in range(128)]
-    
-    # concept_idxs = concept_idxs[0:2]
+    # concept_idxs = [i+0*128 for i in range(128)]
+    # concept_idxs = [i+0*200 for i in range(200)]
+    # concept_idxs = [i+0*25 for i in range(25)]
+    # concept_idxs = [0,1,2,3,4,5]
+    # concept_idxs=[0]
     # concept_idxs = concept_idxs[0:7] + concept_idxs[20:27] + concept_idxs[40:47]
-    # concept_idxs = concept_idxs[0:20]
+    # concept_idxs = concept_idxs[:100]
     # concept_idxs = concept_idxs[20:40]
     # concept_idxs = concept_idxs[40:60]
         
     token_list = []
     origin_token_list = []
-    for _ in range(5):
+    for _ in range(10): # 之前把batch_size从32768改为8192，所以测ae concept要把5改回20，或者batch_size改回32768。
         tokens, origin_tokens = dataloader.get_processed_random_batch()
         token_list.append(tokens)
         origin_token_list.append(origin_tokens)
@@ -131,13 +134,15 @@ def main():
     evaluator_dict = dict()
     
     cfg['evaluator'] = 'faithfulness'
-    for disturb in ['gradient','replace','ablation','replace-ablation']: # 'gradient','replace','ablation','replace-ablation'
-        for measure_obj in ['pred_logit','logits', 'loss']: # 'pred_logit','logits', 'loss'
+    # for disturb in ['ablation']:
+    for disturb in ['gradient','ablation']: # 'gradient','replace','ablation','replace-ablation'
+        for measure_obj in ['loss','next_logit','pred_logit','logits']: # 'pred_logit','logits', 'loss'
+        # for measure_obj in ['loss']: # 'pred_logit','logits', 'loss'
             if measure_obj == 'logits':
-                for corr_func in ['KL_div', 'pearson']:
+                for corr_func in ['KL_div']:
                     if disturb == 'gradient':
                         continue
-                    for topk in [1000]:
+                    for topk in [None]:
                         extractor_str = disturb + '_' + measure_obj + '_' + corr_func + '_top' + str(topk)
                         evaluator_dict[extractor_str] = evaluator_factory(
                         cfg, 
@@ -161,10 +166,11 @@ def main():
                     concept_idx=None, 
                     disturb=disturb, # ['ablation', 'gradient', 'replace']
                     measure_obj=measure_obj, # ['loss', 'class_logit', 'logits']
-                    corr_func='pearson', # ['pearson', 'KL_div', 'openai_var']
+                    corr_func='KL_div', # ['pearson', 'KL_div', 'openai_var']
                     class_idx=7000, 
                     logits_corr_topk=None,
                 )
+    
     cfg['evaluator'] = 'itc'
     evaluator_dict.update({
         'itc_emb_dist': evaluator_factory(

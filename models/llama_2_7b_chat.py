@@ -65,6 +65,7 @@ class Llama2Chat7B(BaseModel):
                 hf_model.eval()
                 hf_model.requires_grad_(True)
                 self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+                
 
                 self.model = HookedTransformer.from_pretrained(model_name,
                                                         n_devices=n_devices,
@@ -76,6 +77,9 @@ class Llama2Chat7B(BaseModel):
                                                         center_unembed=False, 
                                                         hf_model=hf_model, 
                                                         tokenizer=tokenizer)
+                
+                self.tokenizer.add_special_tokens({'pad_token': '<unk>'})
+                self.model.tokenizer.add_special_tokens({'pad_token': '<unk>'})
             else:
                 hf_model = LlamaForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16)
                 hf_model.eval()
@@ -92,3 +96,5 @@ class Llama2Chat7B(BaseModel):
                                                         center_unembed=False, 
                                                         hf_model=hf_model, 
                                                         tokenizer=tokenizer)
+                
+                self.model.tokenizer.add_special_tokens({'pad_token': '<unk>'})

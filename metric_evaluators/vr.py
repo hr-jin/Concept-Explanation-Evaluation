@@ -24,16 +24,20 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         origin_tokens=None,
         most_imp_tokens=None,
         most_imp_idxs=None,
+        origin_imp_idxs=None,
         **kwargs
     ):           
         logger.info('Metric evaluation ...\n')
         metric_list = []
         topic_tokens = [None for i in range(len(concept_idxs))]
         topic_idxs = [None for i in range(len(concept_idxs))]
+        origin_critical_idxs = [None for i in range(len(concept_idxs))]
         if most_imp_tokens is not None:
             topic_tokens = [most_imp_tokens[i] for i in range(len(concept_idxs))]
             topic_idxs = [most_imp_idxs[i].values for i in range(len(concept_idxs))]
+            origin_critical_idxs = [origin_imp_idxs[i].values for i in range(len(concept_idxs))]
         origin_dfs = [None for i in range(len(concept_idxs))]
+        
         most_preferred_tokens = [None for i in range(len(concept_idxs))]
         pre_metrics = dict()
         pre_concept_acts = dict()
@@ -45,12 +49,12 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
                 evaluator.update_concept(concept, concept_idx) 
                 if 'itc' in name:
                     if topic_tokens[j] is None:
-                        tmp_tokens, tmp_idxs, origin_df = evaluator.get_most_critical_tokens(eval_tokens, concept, concept_idx)
+                        tmp_tokens, tmp_idxs, origin_df, origin_critical_idxs_tmp = evaluator.get_most_critical_tokens(eval_tokens, concept, concept_idx)
                         topic_tokens[j] = tmp_tokens
                         topic_idxs[j] = tmp_idxs
                         origin_dfs[j] = origin_df
-                    
-                    concept_metric = evaluator.get_metric(origin_tokens, topic_tokens[j], topic_idxs[j])
+                        origin_critical_idxs[j] = origin_critical_idxs_tmp
+                    concept_metric = evaluator.get_metric(origin_tokens, topic_tokens[j], topic_idxs[j], origin_critical_idxs[j])
                 elif 'replace-ablation' in name: 
                     abl_str = name.replace('replace-ablation', 'ablation') + str(concept_idx)
                     rep_str = name.replace('replace-ablation', 'replace') + str(concept_idx)
@@ -72,6 +76,13 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         
         dtime = datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S')
         
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_metrics.npy',metrics)
+        
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_tokens.npy',np.array(topic_tokens))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_idxs.npy',np.array(topic_idxs))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_pref_tokens.npy',np.array(most_preferred_tokens))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'concept_idxs.npy',np.array(concept_idxs))
+        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_dfs.npy',np.array(origin_dfs))
         
         pearsonr_list = []
         pearsonr_p_list = []
@@ -109,13 +120,7 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'kendalltau_metrics.npy',kendalltau_metrics)
         # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'pearson_p_metrics.npy',pearson_p_metrics)
         np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'kendall_p_metrics.npy',kendall_p_metrics)
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_metrics.npy',metrics)
         
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_tokens.npy',np.array(topic_tokens))
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_imp_idxs.npy',np.array(topic_idxs))
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'most_pref_tokens.npy',np.array(most_preferred_tokens))
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'concept_idxs.npy',np.array(concept_idxs))
-        np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'origin_dfs.npy',np.array(origin_dfs))
         
         # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'cosine_sim_metrics.npy',cosine_sim_metrics)
         

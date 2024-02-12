@@ -72,20 +72,29 @@ class BaseEvaluator(metaclass=ABCMeta):
     #     output = concept_renormed.unsqueeze(0).unsqueeze(0) * f_norm
     #     return output
     
+    # @staticmethod
+    # def ablation_hook(
+    #     hidden_states, 
+    #     hook, 
+    #     concept, 
+    # ):
+    #     origin_mean = hidden_states.mean(dim=-1, keepdim=True)
+    #     origin_std = hidden_states.std(dim=-1, keepdim=True)
+    #     concept_normed = concept / concept.norm(dim=-1, keepdim=True)
+    #     hidden_states_proj = (hidden_states * concept_normed).sum(-1).unsqueeze(-1) * concept_normed
+    #     hidden_states_ortho = hidden_states - hidden_states_proj
+    #     output = (hidden_states_ortho - hidden_states_ortho.mean(dim=-1, keepdim=True)) / hidden_states_ortho.std(dim=-1, keepdim=True)
+    #     output = output * origin_std + origin_mean
+
+    #     return output
     @staticmethod
     def ablation_hook(
         hidden_states, 
         hook, 
+        activations,
         concept, 
     ):
-        origin_mean = hidden_states.mean(dim=-1, keepdim=True)
-        origin_std = hidden_states.std(dim=-1, keepdim=True)
-        concept_normed = concept / concept.norm(dim=-1, keepdim=True)
-        hidden_states_proj = (hidden_states * concept_normed).sum(-1).unsqueeze(-1) * concept_normed
-        hidden_states_ortho = hidden_states - hidden_states_proj
-        output = (hidden_states_ortho - hidden_states_ortho.mean(dim=-1, keepdim=True)) / hidden_states_ortho.std(dim=-1, keepdim=True)
-        output = output * origin_std + origin_mean
-
+        output = hidden_states - (activations.squeeze().unsqueeze(1) @ concept.unsqueeze(0)).reshape(hidden_states.shape)
         return output
     
     @staticmethod
@@ -105,24 +114,43 @@ class BaseEvaluator(metaclass=ABCMeta):
         tokens, 
         concept, 
         hook,
+        concept_act,
     ):
         loss = self.model.run_with_hooks(
             tokens, 
             return_type='loss',
             loss_per_token=True
         )
+        
+        # logits = self.model.run_with_hooks(
+        #     tokens, 
+        #     return_type='logits',
+        #     loss_per_token=True
+        # )
+        # probs = torch.softmax(logits, dim=-1)
+        
+        # true_next_indices = tokens[:,1:].clone().detach().to(self.cfg['device'])
+        # next_probs = torch.gather(probs[:,:-1,:], dim=-1, index=true_next_indices.unsqueeze(-1)).squeeze()
+        # loss_2 = -torch.log(next_probs)
+        
+        # print('loss.shape:',loss.shape)
+        # print('logits.shape:',logits.shape)
+        # print('probs.shape:',probs.shape)
+        # print('true_next_indices.shape:',true_next_indices.shape)
+        # print('next_probs.shape:',next_probs.shape)
+        # print('loss:',loss)
+        # print('loss_2:',loss_2)
+        
         loss_disturbed = self.model.run_with_hooks(
             tokens, 
             return_type='loss', 
             loss_per_token=True,
             fwd_hooks=[(
                 self.cfg["act_name"], 
-                partial(
-                    hook, 
-                    concept=concept,
-                )
+                partial(hook, concept=concept,activations=concept_act)
             )]
         )
+        # print('\nloss - nloss_disturbed:',loss-loss_disturbed)
         return (loss_disturbed - loss).cpu().numpy()
     
     def get_class_logit_diff(
@@ -131,6 +159,7 @@ class BaseEvaluator(metaclass=ABCMeta):
         concept, 
         class_idx, 
         hook,
+        concept_act,
     ):
         # class_idx = -1 means the next token's idx
         logits = self.model.run_with_hooks(tokens)
@@ -138,17 +167,30 @@ class BaseEvaluator(metaclass=ABCMeta):
             tokens, 
             fwd_hooks=[(
                 self.cfg["act_name"], 
-                partial(hook, concept=concept))
+                partial(hook, concept=concept,activations=concept_act))
             ]
         )
+        logits = logits[:,:-1,:]
+        logits_disturbed = logits_disturbed[:,:-1,:]
+        # logits = torch.softmax(logits, dim=-1)
+        # logits_disturbed = torch.softmax(logits_disturbed, dim=-1)
         
         if class_idx == -1:
             max_indices = torch.argmax(logits, dim=-1)
             logit = torch.gather(logits, dim=-1, index=max_indices.unsqueeze(-1)).squeeze()
             logit_disturbed = torch.gather(logits_disturbed, dim=-1, index=max_indices.unsqueeze(-1)).squeeze()
+        elif class_idx == -2:
+            true_next_indices = tokens[:,1:].clone().detach().to(self.cfg['device'])
+            logit = torch.gather(logits, dim=-1, index=true_next_indices.unsqueeze(-1)).squeeze()
+
+            logit_disturbed = torch.gather(logits_disturbed, dim=-1, index=true_next_indices.unsqueeze(-1)).squeeze()
+            # print('\n-log(logits)+log(logit_disturbed):', -torch.log(logit)+torch.log(logit_disturbed))
         else:
             logit = logits[:,:,class_idx]
             logit_disturbed = logits_disturbed[:,:,class_idx]
+        
+        
+        # return (torch.log(logit_disturbed) - torch.log(logit)).cpu().numpy()
         return (logit_disturbed - logit).cpu().numpy()
     
     def get_loss_gradient(self, tokens):
@@ -162,21 +204,34 @@ class BaseEvaluator(metaclass=ABCMeta):
         hidden_state = cache[self.cfg['act_name']].cpu().numpy()
         return grad, hidden_state
     
-    def get_class_logit_gradient(self, tokens, class_idx):
+    def get_class_logit_gradient(self, tokens, class_idx, concept_act):
         # class_idx = -1 means the next token's idx
         grads = []
         hidden_states = []
-        for i in range(tokens.shape[0]):
-            _, cache = run_with_cache_onesentence(
-                tokens[i], 
-                model=self.model,
-                names_filter=[self.cfg['act_name']], 
-                logit_token_idx=class_idx
-            )
-            grads.append(cache[self.cfg['act_name']+'_grad'].cpu().numpy())
-            hidden_states.append(cache[self.cfg['act_name']].cpu().numpy())
-        grad = np.array(grads)[:,0,:,:]
-        hidden_state = np.array(hidden_states)[:,0,:,:]
+        # for i in range(tokens.shape[0]):
+        #     _, cache = run_with_cache_onesentence(
+        #         tokens[i], 
+        #         model=self.model,
+        #         names_filter=[self.cfg['act_name']], 
+        #         logit_token_idx=class_idx,
+        #         concept_act=concept_act[i]
+        #     )
+        #     grads.append(cache[self.cfg['act_name']+'_grad'].cpu().numpy())
+        #     hidden_states.append(cache[self.cfg['act_name']].cpu().numpy())
+        _, cache = run_with_cache_top1logit_bkwd(
+            tokens=tokens, 
+            model=self.model,
+            names_filter=[self.cfg['act_name']], 
+            logit_token_idx=class_idx,
+            concept_act=concept_act,
+            cfg=self.cfg,
+        )
+        grads.append(cache[self.cfg['act_name']+'_grad'].cpu().numpy())
+        hidden_states.append(cache[self.cfg['act_name']].cpu().numpy())
+        
+        # print('grads.shape:',np.array(grads).shape)
+        grad = np.array(grads)[0]
+        hidden_state = np.array(hidden_states)[0]
         return grad, hidden_state
 
     
@@ -232,13 +287,14 @@ class BaseEvaluator(metaclass=ABCMeta):
         hook, 
         topk=None, 
         corr_func='pearson',
+        concept_act=None,
     ):
         origin_logits = self.model.run_with_hooks(tokens)
         disturbed_logits = self.model.run_with_hooks(
             tokens, 
             fwd_hooks=[(
                 self.cfg["act_name"], 
-                partial(hook, concept=concept)
+                partial(hook, concept=concept,activations=concept_act)
                 )]
         )
         if topk != None:
@@ -264,6 +320,9 @@ class BaseEvaluator(metaclass=ABCMeta):
             )
         elif corr_func == 'KL_div':
             corr = -F.kl_div(distributed_softmax.log(), origin_softmax, reduction='none').sum(-1)
+            # y_avg_softmax = torch.softmax((distributed_softmax + origin_softmax) / 2, dim=-1) + 1e-10
+            # corr = 1 / (F.kl_div(y_avg_softmax.log(), origin_softmax, reduction='none') + F.kl_div(y_avg_softmax.log(), distributed_softmax, reduction='none')).sum(-1) / 2
+            
         elif corr_func == 'openai_var':
             corr = 1 - (distributed_softmax - origin_softmax).square().mean(-1) / torch.var(origin_softmax, dim=-1)
         else:
@@ -282,7 +341,7 @@ class BaseEvaluator(metaclass=ABCMeta):
                 partial(self.replacement_hook, concept=concept)
             )]
         )[0][0]
-        top_logits, topk_indices = torch.topk(logits, k=10, dim=0, sorted=True)
+        top_logits, topk_indices = torch.topk(logits, k=5, dim=0, sorted=True)
         most_preferred_tokens = np.array([
             token.strip().lower() 
             for token in self.model.to_str_tokens(topk_indices)
@@ -328,9 +387,11 @@ class BaseEvaluator(metaclass=ABCMeta):
             
         results = []
         for tokens in tqdm(eval_tokens, desc='Searching the corpus for the most critical token for the current concept'):
-            num_tokens = minibatch * maxlen
+            num_tokens = tokens.shape[0] * maxlen
             concept_acts = self.activation_func(tokens, self.model, concept, concept_idx) # minibatch * maxlen
             origin_acts = concept_acts # minibatch * maxlen
+            
+            print('concept_acts.shape:',concept_acts.shape)
             
 
             most_imp_actis = np.zeros([num_tokens])
@@ -347,16 +408,16 @@ class BaseEvaluator(metaclass=ABCMeta):
                 acti_diff = origin_acts - concept_acts
                 acti_diff = acti_diff.detach().cpu().numpy()
 
-                mask = np.ones((minibatch, maxlen))
+                mask = np.ones((tokens.shape[0], maxlen))
                 mask[:, padding_position] = 0
-                mask = mask.reshape((minibatch * maxlen))
+                mask = mask.reshape((tokens.shape[0] * maxlen))
                 imp_this_token = np.where(mask == 0, acti_diff , imp_this_token)
                 
                 acti_diff =  acti_diff * mask
                 
-                now_pos = np.array([padding_position for _ in range(minibatch * maxlen)])
+                now_pos = np.array([padding_position for _ in range(tokens.shape[0] * maxlen)])
                 padding_token_id = np.tile(tokens[:,padding_position].unsqueeze(1).cpu().numpy(), [1, maxlen])
-                padding_token_id = padding_token_id.reshape((minibatch * maxlen))
+                padding_token_id = padding_token_id.reshape((tokens.shape[0] * maxlen))
 
                 indices = most_imp_actis > acti_diff
                 most_imp_pos = np.where(indices, most_imp_pos , now_pos)
@@ -374,22 +435,32 @@ class BaseEvaluator(metaclass=ABCMeta):
             df_agg = df.groupby('token').agg('max').sort_values(by=['imp'],ascending=False)
             df_ctxt_agg = df_ctxt.groupby('token').agg('max').sort_values(by=['imp'],ascending=False)
 
-            result = pd.merge(df_agg, df_ctxt_agg, on=['token'], how='left').reset_index()
-            result.fillna(0, inplace = True)
-            result['imp'] = result['imp_x'] + result['imp_y']
-            result = result.sort_values(by=['imp'],ascending=False)[['token','imp','token_idx_x']][:20]
-            results.append(result)
+            result = pd.concat([df_agg, df_ctxt_agg]).sort_values(by=['imp'],ascending=False).reset_index()
+            result = result.drop_duplicates(subset=['token'])
+            # print('result:', result)
+            # result = pd.merge(df_agg, df_ctxt_agg, on=['token'], how='left').reset_index()
+            # result.fillna(0, inplace = True)
+            # result['imp'] = result['imp_x'] + result['imp_y']
+            # result = result.sort_values(by=['imp'],ascending=False)[['token','imp','token_idx_x']][:20]
+            results.append(result[:20])
+            
+            # print('df_agg:',df_agg)
+            # print('df_ctxt_agg:',df_ctxt_agg)
             
         
-        df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx_x']]
+        # df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx_x']]
+        df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx']]
+        # print(df_final[])
         print('df_final:\n', df_final[:5])
         df_final = df_final[:5]
         origin_df = df_final
         max_value = df_final['imp'].values.max()
-        df_final = df_final[df_final['imp']>=max_value*0.2]
+        # df_final = df_final[df_final['imp']>=max_value*0.2]
         df_most_critical_tokens = df_final['token'].apply(lambda x:x.strip().lower()).values
-        df_most_critical_token_idxs = df_final['token_idx_x']
-        most_critical_token_idxs = df_most_critical_token_idxs[df_most_critical_tokens != '']
+        # df_most_critical_token_idxs = df_final['token_idx_x']
+        df_most_critical_token_idxs = df_final['token_idx'].astype('int32').values
+        most_critical_token_idxs = df_most_critical_token_idxs[df_most_critical_tokens != ''].astype('int32')
         most_critical_tokens = df_most_critical_tokens[df_most_critical_tokens != '']
+        # print('df_most_critical_token_idxs:',df_most_critical_token_idxs)
         logger.info('The most critical tokens(after removing the spaces and changing to lower case): \n{}'.format(' '.join(most_critical_tokens)))
-        return most_critical_tokens, most_critical_token_idxs, origin_df
+        return most_critical_tokens, most_critical_token_idxs, origin_df, df_most_critical_token_idxs

@@ -1,4 +1,5 @@
 from .base import AbstractDataloader
+import torch
 
 class TCAVDataloader(AbstractDataloader):
     
@@ -17,3 +18,11 @@ class TCAVDataloader(AbstractDataloader):
     
     def next(self):
         return self.pos_data, self.neg_data, self.pos_labels, self.neg_labels
+    
+    @torch.no_grad()
+    def get_processed_random_batch(self):
+        print(self.pos_data )
+        print(self.neg_data )
+        inputs = self.model.tokenizer(self.pos_data + self.neg_data, max_length=128, truncation=True, padding=True,return_tensors="pt")
+        inputs = inputs['input_ids'].to('cpu')
+        return inputs, inputs

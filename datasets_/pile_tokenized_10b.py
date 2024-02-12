@@ -16,7 +16,10 @@ class PileTokenized10BDataset(AbstractDataset):
         if not os.path.exists(os.path.join(data_dir, 'pile-tokenized-10b.hf')):
             data = datasets.load_dataset('pile-tokenized-10b', split="train", cache_dir=data_dir)
             data.save_to_disk(os.path.join(data_dir, 'pile-tokenized-10b.hf'))
-        data = datasets.load_from_disk(os.path.join(data_dir, 'pile-tokenized-10b.hf'))
+        if self.cfg['model_to_interpret']=="llama-2-7b-chat":
+            data = datasets.load_from_disk(os.path.join(data_dir, 'pile-tokenized-10b-by-llama2.hf'))
+        else:
+            data = datasets.load_from_disk(os.path.join(data_dir, 'pile-tokenized-10b.hf'))
         self.data = data
         
 

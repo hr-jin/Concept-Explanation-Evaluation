@@ -45,8 +45,47 @@ class Neuron(nn.Module, BaseExtractor):
     def get_concepts(self):
         return self.concepts
         
+    # @torch.no_grad()
+    # def activation_func(self, tokens, model, concept=None, concept_idx=None):
+    #     _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
+    #     hidden_states = cache[self.cfg["act_name"]]
+    
+    #     assert tokens.shape[1] == hidden_states.shape[1]
+        
+    #     if self.cfg['site'] == 'mlp_post':
+    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_mlp'])
+    #     else: 
+    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
+            
+    #     if concept_idx == None:
+    #         results = hidden_states @ concept
+    #         results = results * (results > 0.)
+    #     else:
+    #         results = hidden_states @ self.concepts[concept_idx, :]
+    #         results = results * (results > 0.)
+    #     return results
+    
+    # @torch.no_grad()
+    # def activation_func(self, tokens, model, concept=None, concept_idx=None):    
+    #     _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
+    #     hidden_states = cache[self.cfg["act_name"]]
+    
+    #     assert tokens.shape[1] == hidden_states.shape[1]
+        
+    #     if self.cfg['site'] == 'mlp_post':
+    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_mlp'])
+    #     else: 
+    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
+            
+    #     if concept_idx == None:
+    #         results = torch.cosine_similarity(hidden_states, concept, dim=-1)
+    #         # results = results * (results > 0.)
+    #     else:
+    #         results = torch.cosine_similarity(hidden_states, self.concepts[concept_idx, :], dim=-1)
+    #         # results = results * (results > 0.)
+    #     return results
     @torch.no_grad()
-    def activation_func(self, tokens, model, concept=None, concept_idx=None):
+    def activation_func(self, tokens, model, concept=None, concept_idx=None):    
         _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
         hidden_states = cache[self.cfg["act_name"]]
     
@@ -56,9 +95,9 @@ class Neuron(nn.Module, BaseExtractor):
             hidden_states = hidden_states.reshape(-1, self.cfg['d_mlp'])
         else: 
             hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
-            
+        
         if concept_idx == None:
-            results = hidden_states @ concept
+            results = (hidden_states * concept).sum(-1) / (concept * concept).sum()
         else:
-            results = hidden_states @ self.concepts[:, concept_idx]
+            results = (hidden_states * self.concepts[concept_idx, :]).sum(-1) / (concept * concept).sum()
         return results

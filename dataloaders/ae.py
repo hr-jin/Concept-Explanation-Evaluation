@@ -60,6 +60,7 @@ class AEDataloader(AbstractDataloader):
                             tokens = inputs['input_ids']
                         # print(tokens.dtype)
                         tokens = tokens[:, :self.cfg['seq_len']]
+                        print(tokens.shape[0])
                         tokens[:, 0] = self.model.tokenizer.bos_token_id
                         _, cache = self.model.run_with_cache(tokens, names_filter=self.cfg["act_name"], remove_batch_dim=False)
                         acts = cache[self.cfg["act_name"]].reshape(-1, self.cfg["act_size"])

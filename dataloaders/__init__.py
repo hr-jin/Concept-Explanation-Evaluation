@@ -5,7 +5,7 @@ from .conceptx_naive import ConceptXNaiveDataloader
 
 
 DATALOADERS = {
-    "spine": AEDataloader,
+    "neuron": AEDataloader,
     AEDataloader.code(): AEDataloader,
     ConceptXDataloader.code(): ConceptXDataloader,
     TCAVDataloader.code(): TCAVDataloader,
@@ -15,6 +15,6 @@ DATALOADERS = {
 
 def dataloader_factory(cfg, data, model):
 
-    dataloader = DATALOADERS[cfg["extractor"]]
+    dataloader = DATALOADERS[cfg["dataloader"]]
     train_dataloader = dataloader(cfg, data, model)
     return train_dataloader
