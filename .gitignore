@@ -8,6 +8,8 @@ run.sh
 *.npy
 debug.sh
 transform_dataset.py
+wandb/
 run_gpt2.sh
 run_llama.sh
 *.log
+
