@@ -21,6 +21,10 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
         evaluator_dict=dict(), 
         concepts=[], 
         concept_idxs=[], 
+        origin_tokens=None,
+        most_imp_tokens=None,
+        most_imp_idxs=None,
+        origin_imp_idxs=None,
         **kwargs
     ):            
         evaluator_names = list(evaluator_dict.keys())        
@@ -31,6 +35,11 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
         metric_list = []
         topic_tokens = [[None for i in range(len(concept_idxs))] for j in range(len(eval_tokens))]
         topic_idxs = [[None for i in range(len(concept_idxs))] for j in range(len(eval_tokens))]
+        origin_critical_idxs = [[None for i in range(len(concept_idxs))] for j in range(len(eval_tokens))]
+
+        origin_dfs = [[None for i in range(len(concept_idxs))] for j in range(len(eval_tokens))]
+        most_preferred_tokens = [[None for i in range(len(concept_idxs))] for j in range(len(eval_tokens))]
+   
         pre_metrics = dict()
         pre_concept_acts = dict()
         for i, tokens in enumerate(eval_tokens):
@@ -51,10 +60,12 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
                     evaluator.update_concept(concept, concept_idx) 
                     if 'itc' in name:
                         if topic_tokens[i][j] is None:
-                            tmp_tokens, tmp_idxs, origin_df = evaluator.get_most_critical_tokens(tokens, concept, concept_idx)
+                            tmp_tokens, tmp_idxs, origin_df, origin_critical_idxs_tmp = evaluator.get_most_critical_tokens(tokens, concept, concept_idx)
                             topic_tokens[i][j] = tmp_tokens
                             topic_idxs[i][j] = tmp_idxs
-                        concept_metric = evaluator.get_metric(tokens, topic_tokens[i][j], topic_idxs[i][j])
+                            origin_dfs[i][j] = origin_df
+                            origin_critical_idxs[i][j] = origin_critical_idxs_tmp
+                        concept_metric = evaluator.get_metric(origin_tokens, topic_tokens[i][j], topic_idxs[i][j], origin_critical_idxs[i][j])
                     elif 'replace-ablation' in name: 
                         abl_str = name.replace('replace-ablation', 'ablation') + str(concept_idx)
                         rep_str = name.replace('replace-ablation', 'replace') + str(concept_idx)

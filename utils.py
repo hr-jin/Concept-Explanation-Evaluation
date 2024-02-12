@@ -27,11 +27,14 @@ def run_with_cache_onesentence(
         clear_contexts=False,
         seq_len=0,
         logit_token_idx=-1,
+        concept_act=None,
         **model_kwargs,
     ):
     cache_dict, fwd, bwd = model.get_caching_hooks(
         names_filter, incl_bwd, device, remove_batch_dim=remove_batch_dim
     )
+    
+    # print('cache_dict_1:', cache_dict)
 
     with model.hooks(
         fwd_hooks=fwd,
@@ -40,11 +43,62 @@ def run_with_cache_onesentence(
         clear_contexts=clear_contexts,
     ):
         model_out = model(*model_args, **model_kwargs)
-        last_token_logit = model_out[0, seq_len-1, :] # vocab_size
+        # last_token_logit = model_out[0, seq_len-1, :] # vocab_size
+        last_token_logit = model_out[0, torch.argmax(concept_act), :] # vocab_size
         if logit_token_idx == -1:
             value, logit_token_idx = torch.topk(last_token_logit, k=1)
         if incl_bwd:
             last_token_logit[logit_token_idx].backward()
+            
+    # print('cache_dict_2:', cache_dict)
+
+    return model_out, cache_dict
+
+def run_with_cache_top1logit_bkwd(
+        tokens,
+        *model_args,
+        model,
+        names_filter,
+        device=None,
+        remove_batch_dim=False,
+        incl_bwd=True,
+        reset_hooks_end=True,
+        clear_contexts=False,
+        seq_len=0,
+        cfg=None,
+        logit_token_idx=-1,
+        concept_act=None,
+        **model_kwargs,
+    ):
+    cache_dict, fwd, bwd = model.get_caching_hooks(
+        names_filter, incl_bwd, device, remove_batch_dim=remove_batch_dim
+    )
+    
+    # print('cache_dict_1:', cache_dict)
+
+    with model.hooks(
+        fwd_hooks=fwd,
+        bwd_hooks=bwd,
+        reset_hooks_end=reset_hooks_end,
+        clear_contexts=clear_contexts,
+    ):
+        model_out = model(tokens, *model_args, **model_kwargs)
+        # model_out = torch.softmax(model_out, dim=-1)
+        # last_token_logit = model_out[0, seq_len-1, :] # vocab_size
+        if logit_token_idx == -1:
+            value, _ = torch.topk(model_out, k=1, dim=-1) # b, seqlen
+            
+        if logit_token_idx == -2:
+            true_next_indices = tokens[:,1:].clone().detach().to(cfg['device'])
+            value = torch.gather(model_out[:,:-1,:], dim=-1, index=true_next_indices.unsqueeze(-1)).squeeze()
+        if incl_bwd:
+            # print('logit_token_idx.shape:', logit_token_idx.shape)
+            # print('value.shape:', value.shape)
+            # (torch.log(value)).sum().backward()
+            (value).sum().backward()
+            # last_token_logit[logit_token_idx].backward()
+            
+    # print('cache_dict_2:', cache_dict)
 
     return model_out, cache_dict
     
@@ -80,7 +134,7 @@ def arg_parse_update_cfg(default_cfg, parser):
         if key == 'extractor':
             parser.add_argument(f"--{key}", choices=["ae", "tcav", "neuron", "conceptx"], default="ae")
         elif key == 'model_to_interpret':
-            parser.add_argument(f"--{key}", choices=["llama-2-7b-chat", "pythia-70m"], default="pythia-70m")
+            parser.add_argument(f"--{key}", choices=["llama-2-7b-chat", "pythia-70m", 'gpt2-small'], default="pythia-70m")
         elif type(value) == bool:
             if value:
                 parser.add_argument(f"--{key}", action="store_false")
