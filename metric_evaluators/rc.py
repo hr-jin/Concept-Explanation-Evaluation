@@ -50,12 +50,6 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
             for name, evaluator in evaluator_dict.items():  
                 logger.info('Evaluating {} ...'.format(name))
                 concept_metric_list = []
-                # for j, concept_idx in enumerate(concept_idxs):
-                #     concept = concepts[j]
-                #     evaluator.update_concept(concept, concept_idx) 
-                #     concept_metric = evaluator.get_metric(tokens)
-                #     concept_metric_list.append(concept_metric)
-                # tmp_metric_list.append(concept_metric_list)
                 
                 for j, concept_idx in enumerate(concept_idxs):
                     concept = concepts[j]

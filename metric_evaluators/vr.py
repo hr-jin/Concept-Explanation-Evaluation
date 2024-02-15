@@ -112,26 +112,16 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         kendalltau_metrics = torch.tensor(kendalltau_list).cpu().numpy() # n_metrics * n_metrics
         pearson_p_metrics = torch.tensor(pearsonr_p_list).cpu().numpy() # n_metrics * n_metrics
         kendall_p_metrics = torch.tensor(kendalltau_p_list).cpu().numpy() # n_metrics * n_metrics
-        # cosine_sim_metrics = torch.tensor(cosine_sim_list).cpu().numpy() # n_metrics * n_metrics
         
         
         
-        # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'pearsonr_metrics.npy',pearsonr_metrics)
         np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'kendalltau_metrics.npy',kendalltau_metrics)
-        # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'pearson_p_metrics.npy',pearson_p_metrics)
         np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'kendall_p_metrics.npy',kendall_p_metrics)
-        
-        
-        # np.save(self.cfg['output_dir'] + '/vr_data/' + str(dtime).replace(' ','_') + 'cosine_sim_metrics.npy',cosine_sim_metrics)
-        
         logger.info('Metrics: '.format(str(list(evaluator_dict.keys()))))
-        # logger.info('Metric Validity Relevance (cosine similarity): \n{}'.format(str(cosine_sim_metrics))) 
         logger.info('Metric Validity Relevance (pearsonr): \n{}'.format(str(pearsonr_metrics)))   
         logger.info('Metric Validity Relevance (kendalltau): \n{}'.format(str(kendalltau_metrics)))   
         logger.info('P-value (pearsonr): \n{}'.format(str(pearson_p_metrics)))   
-        logger.info('P-value (kendalltau): \n{}'.format(str(kendall_p_metrics))) 
-        
-        
+        logger.info('P-value (kendalltau): \n{}'.format(str(kendall_p_metrics)))   
         return kendalltau_metrics, pearsonr_metrics
         
             
