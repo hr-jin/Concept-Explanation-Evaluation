@@ -18,6 +18,8 @@ class PileTokenized10BDataset(AbstractDataset):
             data.save_to_disk(os.path.join(data_dir, 'pile-tokenized-10b.hf'))
         if self.cfg['model_to_interpret']=="llama-2-7b-chat":
             data = datasets.load_from_disk(os.path.join(data_dir, 'pile-tokenized-10b-by-llama2.hf'))
+        elif self.cfg['model_to_interpret']=="gpt2-small":
+            data = datasets.load_from_disk(os.path.join(data_dir, 'pile-tokenized-10b-by-gpt2.hf'))
         else:
             data = datasets.load_from_disk(os.path.join(data_dir, 'pile-tokenized-10b.hf'))
         self.data = data

@@ -8,7 +8,6 @@ cfg = {
         "model_to_interpret": "pythia-70m", # choose from ["llama-2-7b-chat", "pythia-70m"]
         "load_path": "./best_reconstruct",#"{The path where you save checkpoints, e.g. /user/data/outputs/AE/best_reconstruct}",
         "load_extractor": False,
-        
 
         ## AutoEncoder
         "dict_mult": 8,
@@ -43,6 +42,7 @@ cfg = {
         'evaluator': 'itc',
         'concept_eval_batchsize': 128,
         'return_type': 'weighted',
+        'topic_len': 20,
         
         ## Metric Evaluating
         'metric_evaluator': 'rc',
@@ -61,7 +61,6 @@ cfg = {
         "tokenized":False, # Whether the training data has been tokenized
         "data_from_hf":True, # Whether the dataset is downloaded from huggingface
         'dataloader': 'ae',
-        
         
         ## Which layer and part of the model should be explained?
         "layer": 0,

@@ -30,7 +30,9 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
         evaluator_names = list(evaluator_dict.keys())        
         minibatch = self.cfg['metric_eval_batchsize']
         origin_tokens = eval_tokens
+        print('origin_tokens.shape:',origin_tokens.shape)
         eval_tokens = eval_tokens.split(minibatch, dim=0) 
+        print('len(eval_tokens):',len(eval_tokens))
           
         metric_list = []
         topic_tokens = [[None for i in range(len(concept_idxs))] for j in range(len(eval_tokens))]

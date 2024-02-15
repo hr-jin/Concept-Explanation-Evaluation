@@ -43,35 +43,6 @@ class TCAVExtractor(nn.Module, BaseExtractor):
             concept_repres = concept_repres[np.arange(concept_repres.shape[0]), :, :]
         return concept_repres
     
-    # def activation_func(self, tokens, model, concept, concept_idx):
-    #     with torch.no_grad():
-    #         reps = self.get_token_reps(tokens)
-    #         b, t, d = reps.shape
-    #         reps = reps.reshape((-1, d))
-    #         acts = torch.tensor(self.classifier.predict_proba(reps))[:,1]
-    #         acts = (acts - 0.5) * (acts > 0.5)
-    #         return acts
-    
-    # @torch.no_grad()
-    # def activation_func(self, tokens, model, concept=None, concept_idx=None):    
-    #     _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
-    #     hidden_states = cache[self.cfg["act_name"]]
-    
-    #     assert tokens.shape[1] == hidden_states.shape[1]
-        
-    #     if self.cfg['site'] == 'mlp_post':
-    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_mlp'])
-    #     else: 
-    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
-            
-    #     if concept_idx == None:
-    #         results = torch.cosine_similarity(hidden_states, concept, dim=-1)
-    #         # results = results * (results > 0.)
-    #     else:
-    #         results = torch.cosine_similarity(hidden_states, self.concepts[concept_idx, :], dim=-1)
-    #         # results = results * (results > 0.)
-    #     return results
-    
     @torch.no_grad()
     def activation_func(self, tokens, model, concept=None, concept_idx=None):    
         _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])

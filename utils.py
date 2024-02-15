@@ -4,9 +4,6 @@ import datasets
 import numpy as np
 import random
 import os
-from transformers import LlamaConfig, LlamaForCausalLM, AutoTokenizer
-from accelerate import init_empty_weights, load_checkpoint_and_dispatch
-from transformer_lens import HookedTransformer
 from logger import logger
 
 
@@ -34,8 +31,6 @@ def run_with_cache_onesentence(
         names_filter, incl_bwd, device, remove_batch_dim=remove_batch_dim
     )
     
-    # print('cache_dict_1:', cache_dict)
-
     with model.hooks(
         fwd_hooks=fwd,
         bwd_hooks=bwd,
@@ -43,15 +38,12 @@ def run_with_cache_onesentence(
         clear_contexts=clear_contexts,
     ):
         model_out = model(*model_args, **model_kwargs)
-        # last_token_logit = model_out[0, seq_len-1, :] # vocab_size
-        last_token_logit = model_out[0, torch.argmax(concept_act), :] # vocab_size
+        last_token_logit = model_out[0, torch.argmax(concept_act), :] 
         if logit_token_idx == -1:
             value, logit_token_idx = torch.topk(last_token_logit, k=1)
         if incl_bwd:
             last_token_logit[logit_token_idx].backward()
             
-    # print('cache_dict_2:', cache_dict)
-
     return model_out, cache_dict
 
 def run_with_cache_top1logit_bkwd(
@@ -74,8 +66,6 @@ def run_with_cache_top1logit_bkwd(
         names_filter, incl_bwd, device, remove_batch_dim=remove_batch_dim
     )
     
-    # print('cache_dict_1:', cache_dict)
-
     with model.hooks(
         fwd_hooks=fwd,
         bwd_hooks=bwd,
@@ -83,23 +73,15 @@ def run_with_cache_top1logit_bkwd(
         clear_contexts=clear_contexts,
     ):
         model_out = model(tokens, *model_args, **model_kwargs)
-        # model_out = torch.softmax(model_out, dim=-1)
-        # last_token_logit = model_out[0, seq_len-1, :] # vocab_size
         if logit_token_idx == -1:
-            value, _ = torch.topk(model_out, k=1, dim=-1) # b, seqlen
+            value, _ = torch.topk(model_out, k=1, dim=-1) 
             
         if logit_token_idx == -2:
             true_next_indices = tokens[:,1:].clone().detach().to(cfg['device'])
             value = torch.gather(model_out[:,:-1,:], dim=-1, index=true_next_indices.unsqueeze(-1)).squeeze()
         if incl_bwd:
-            # print('logit_token_idx.shape:', logit_token_idx.shape)
-            # print('value.shape:', value.shape)
-            # (torch.log(value)).sum().backward()
             (value).sum().backward()
-            # last_token_logit[logit_token_idx].backward()
             
-    # print('cache_dict_2:', cache_dict)
-
     return model_out, cache_dict
     
 def load_dataset(data_dir, dataset_name, data_from_hf):
@@ -114,7 +96,7 @@ def load_dataset(data_dir, dataset_name, data_from_hf):
 
 
 def post_init_cfg(cfg):
-    cfg["model_batch_size"] = cfg["batch_size"] // cfg["seq_len"] # * 16
+    cfg["model_batch_size"] = cfg["batch_size"] // cfg["seq_len"]
     cfg["buffer_size"] = cfg["batch_size"] * cfg["buffer_mult"]
     cfg["buffer_batches"] = cfg["buffer_size"] // cfg["seq_len"]
     if cfg['name_only']:
@@ -174,6 +156,4 @@ def process_cfg(cfg, model_to_interpret):
     cfg['save_dir'] = save_dir
     
     logger.info("Updated config")
-    
-    
     return cfg
