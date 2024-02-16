@@ -15,7 +15,7 @@ cfg = {
         "d_model": None,
         "val_freq": 100,
         "data_dir": "./data", #"{The directory where you save datasets, e.g. /user/data/datasets/pile/}",
-        "dataset_name": "pile-tokenized-10b", #"{The training dataset name, e.g. pile-tokenized-10b}",
+        "dataset_name": "pile", #"{The training dataset name, e.g. pile}",
         "output_dir": "./output", #"{The directory where you save checkpoints, e.g. /user/data/outputs/AE}",
         "model_dir": "Pythia-70m", #"{The directory where you save your model, e.g. /user/data/models/Pythia-70m}",
         "reinit": 1,

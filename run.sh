@@ -45,7 +45,7 @@ model_dir="..."
 
 
 data_dir=".../data/pile_neel/"
-dataset_name="pile-tokenized-10b" 
+dataset_name="pile" 
 dataloader='ae' # choose from ["ae", "tcav", 'conceptx_naive', 'neuron']
 extractor='ae' # choose from ["ae", "tcav", 'conceptx_ori', 'neuron']
 evaluator='otc'
