@@ -1,5 +1,3 @@
-cd /root/autodl-tmp/codebase
-
 if [ ! -d logs  ];then
   mkdir logs
 else
