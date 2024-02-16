@@ -44,7 +44,7 @@ model_dir="..."
 # device_list=''
 
 
-data_dir=".../data/pile_neel/"
+data_dir=".../data/pile/"
 dataset_name="pile" 
 dataloader='ae' # choose from ["ae", "tcav", 'conceptx_naive', 'neuron']
 extractor='ae' # choose from ["ae", "tcav", 'conceptx_ori', 'neuron']

@@ -2,7 +2,7 @@ from .base import AbstractDataset
 import os
 import datasets
 
-class PileTokenized10BDataset(AbstractDataset):
+class PileDataset(AbstractDataset):
     def __init__(self, cfg):
         super().__init__(cfg)
         self.load_dataset()
