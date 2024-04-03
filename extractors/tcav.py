@@ -29,7 +29,12 @@ class TCAVExtractor(nn.Module, BaseExtractor):
     
     def get_reps(self, concept_examples):
         with torch.no_grad():
+            print('\nlen(concept_examples):',len(concept_examples))
+            print('\nconcept_examples:',concept_examples)
             inputs = self.tokenizer(concept_examples, max_length=128, truncation=True, padding=True,return_tensors="pt")
+            # for sentence in concept_examples:
+            #     print('sentence:', sentence)
+            #     self.tokenizer(concept_examples, max_length=128, truncation=True, padding=True,return_tensors="pt")
             inputs = inputs.to('cpu')
             _, cache = self.model.run_with_cache(inputs['input_ids'], names_filter=[self.act_name])
             concept_repres = cache[self.act_name].cpu().detach().numpy()
@@ -55,10 +60,8 @@ class TCAVExtractor(nn.Module, BaseExtractor):
         else: 
             hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
         
-        if concept_idx == None:
-            results = (hidden_states * concept).sum(-1) / (concept * concept).sum()
-        else:
-            results = (hidden_states * self.concept[concept_idx, :]).sum(-1) / (concept * concept).sum()
+        # results = (hidden_states * concept).sum(-1) / (concept * concept).sum()
+        results = torch.tensor(self.classifier.predict_proba(hidden_states.cpu().numpy())[:,1]).to(self.cfg['device'])
         return results
    
     def extract_concepts(self, model):
@@ -71,8 +74,10 @@ class TCAVExtractor(nn.Module, BaseExtractor):
         X = np.vstack((positive_embedding, negative_embedding))
         Y = np.concatenate((pos_labels, neg_labels))
 
-        x_train, x_val, y_train, y_val = train_test_split(X, Y, random_state=0)
-        self.classifier = LogisticRegression(solver='saga', max_iter=10000)
+        x_train, x_val, y_train, y_val = train_test_split(X, Y, 
+                                                          test_size=0.2,
+                                                          random_state=3)
+        self.classifier = LogisticRegression(solver='liblinear', max_iter=50000)
         self.classifier.fit(x_train, y_train)
         
         predictions_val = self.classifier.predict(x_val)

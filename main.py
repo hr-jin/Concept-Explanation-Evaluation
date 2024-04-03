@@ -47,7 +47,8 @@ def main():
     print('concept vectors:', concepts)
     print('concepts.shape:', concepts.shape)
     
-    concept_idxs = [i for i in range(200)]
+    # concept_idxs = [i for i in range(200)]
+    concept_idxs = [i for i in range(1)]
     
     token_list = []
     origin_token_list = []

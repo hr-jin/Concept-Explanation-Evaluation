@@ -14,7 +14,8 @@ class HarmFulQADataset(AbstractDataset):
 
     def load_dataset(self):
         data_dir = self.cfg['data_dir']
-        df = pd.read_csv(os.path.join(data_dir, 'HarmfulQA.csv'))
+        df = pd.read_csv(os.path.join(data_dir, 'advbench+harmfulqa.csv'))
+        # df = pd.read_csv(os.path.join(data_dir, 'HarmfulQA.csv'))
         pos_data = df['question_1'].tolist()
         neg_data = df['question_2'].tolist()   
         pos_labels = np.ones((len(pos_data), ))  
