@@ -46,6 +46,7 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
         pre_concept_acts = dict()
         for i, tokens in enumerate(eval_tokens):
             logger.info('Metric evaluation on subdataset {}...\n'.format(i+1))
+            token_freq_dict, freq_threshold = BaseMetricEvaluator.get_token_freq(tokens)
             tmp_metric_list = []
             for name, evaluator in evaluator_dict.items():  
                 logger.info('Evaluating {} ...'.format(name))
@@ -56,12 +57,20 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
                     evaluator.update_concept(concept, concept_idx) 
                     if 'itc' in name:
                         if topic_tokens[i][j] is None:
-                            tmp_tokens, tmp_idxs, origin_df, origin_critical_idxs_tmp = evaluator.get_most_critical_tokens(tokens, concept, concept_idx)
+                            tmp_tokens, tmp_idxs, origin_df, origin_critical_idxs_tmp = evaluator.get_most_critical_tokens(tokens, concept, concept_idx, token_freq_dict, freq_threshold)
                             topic_tokens[i][j] = tmp_tokens
                             topic_idxs[i][j] = tmp_idxs
                             origin_dfs[i][j] = origin_df
                             origin_critical_idxs[i][j] = origin_critical_idxs_tmp
-                        concept_metric = evaluator.get_metric(origin_tokens, topic_tokens[i][j], topic_idxs[i][j], origin_critical_idxs[i][j])
+                        concept_metric = evaluator.get_metric(
+                            origin_tokens, 
+                            topic_tokens[i][j], 
+                            topic_idxs[i][j], 
+                            origin_critical_idxs[i][j], 
+                            origin_df=origin_dfs[i][j], 
+                            token_freq_dict=token_freq_dict, 
+                            freq_threshold=freq_threshold
+                        )
                     elif 'replace-ablation' in name: 
                         abl_str = name.replace('replace-ablation', 'ablation') + str(concept_idx)
                         rep_str = name.replace('replace-ablation', 'replace') + str(concept_idx)

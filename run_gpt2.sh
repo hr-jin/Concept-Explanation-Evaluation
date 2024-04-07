@@ -64,7 +64,7 @@ layer=6
 
 extractor='ae' # choose from ["ae", "tcav", 'conceptx_ori', 'neuron']
 evaluator='otc'
-metric_evaluator='rc'
+metric_evaluator='vr'
 return_type='weighted_normed'
 
 topic_len=20
@@ -87,7 +87,7 @@ l1_str=${l1_coeff/./-}
 dict_mult_str=${dict_mult/./-}
 site_str=${site/./-}
 
-log_str="logs/0406_gpt2_nonHighFreqInTopic_ae_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
+log_str="logs/0407_gpt2_reada_InTopicDivFreq_ae_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
 
 echo $log_str
 

@@ -41,6 +41,7 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         most_preferred_tokens = [None for i in range(len(concept_idxs))]
         pre_metrics = dict()
         pre_concept_acts = dict()
+        token_freq_dict, freq_threshold = BaseMetricEvaluator.get_token_freq(eval_tokens)
         for name, evaluator in evaluator_dict.items():   
             logger.info('Evaluating {} ...'.format(name))   
             concept_metric_list = []    
@@ -49,12 +50,23 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
                 evaluator.update_concept(concept, concept_idx) 
                 if 'itc' in name:
                     if topic_tokens[j] is None:
-                        tmp_tokens, tmp_idxs, origin_df, origin_critical_idxs_tmp = evaluator.get_most_critical_tokens(eval_tokens, concept, concept_idx)
+                        (tmp_tokens, 
+                         tmp_idxs, 
+                         origin_df, 
+                         origin_critical_idxs_tmp) = evaluator.get_most_critical_tokens(eval_tokens, 
+                                                                                        concept, 
+                                                                                        concept_idx,
+                                                                                        token_freq_dict,
+                                                                                        freq_threshold)
                         topic_tokens[j] = tmp_tokens
                         topic_idxs[j] = tmp_idxs
                         origin_dfs[j] = origin_df
                         origin_critical_idxs[j] = origin_critical_idxs_tmp
-                    concept_metric = evaluator.get_metric(origin_tokens, topic_tokens[j], topic_idxs[j], origin_critical_idxs[j])
+                    concept_metric = evaluator.get_metric(
+                        origin_tokens, topic_tokens[j], topic_idxs[j], 
+                        origin_critical_idxs[j],origin_df=origin_dfs[j],
+                        token_freq_dict=token_freq_dict, freq_threshold=freq_threshold
+                    )
                 elif 'replace-ablation' in name: 
                     abl_str = name.replace('replace-ablation', 'ablation') + str(concept_idx)
                     rep_str = name.replace('replace-ablation', 'replace') + str(concept_idx)

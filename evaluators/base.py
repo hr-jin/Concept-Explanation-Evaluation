@@ -176,23 +176,39 @@ class BaseEvaluator(metaclass=ABCMeta):
                 topic_coherence = (pmis * mask).sum() / mask.sum()
         return topic_coherence
     
-    def get_emb_topic_coherence(self, most_critical_token_idxs,origin_df):
+    def get_emb_topic_coherence(self, most_critical_token_idxs, origin_df=None):
         X = self.model.embed.W_E.detach().cpu()[most_critical_token_idxs]
-        token_freq = origin_df['freq'].values
         if self.pmi_type == 'emb_dist':  
             pmis = torch.tensor([[(emb1 - emb2).square().sum(-1).sqrt() for emb2 in X] for emb1 in X])
-            freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
+            if origin_df is not None:
+                # token_freq = origin_df['freq'].values
+                # freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
+                token_imp = origin_df['imp'].values
+                imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
+                imps =  imps - imps.max()
+                imps = torch.exp(imps)
+                imps = imps / imps.sum()
             if X.shape[0] == 1:
                 topic_coherence = 0.
             elif X.shape[0] == 0:
                 topic_coherence = -2.
             else:
                 mask = torch.triu(torch.ones_like(pmis),diagonal=1)
-                # topic_coherence = (pmis * mask).sum() / mask.sum()
-                topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
+                if origin_df is not None:
+                    # topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
+                    topic_coherence = (pmis * imps * mask).sum() / mask.sum()
+                else:
+                    topic_coherence = (pmis * mask).sum() / mask.sum()
         elif self.pmi_type == 'emb_cos':  
             X_normed = X / X.square().sum(-1).sqrt().unsqueeze(1)
-            freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
+            if origin_df is not None:
+                # token_freq = origin_df['freq'].values
+                # freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
+                token_imp = origin_df['imp'].values
+                imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
+                imps =  imps - imps.max()
+                imps = torch.exp(imps)
+                imps = imps / imps.sum()
             if X.shape[0] == 1:
                 topic_coherence = 1.
             elif X.shape[0] == 0:
@@ -200,8 +216,11 @@ class BaseEvaluator(metaclass=ABCMeta):
             else:
                 pmis = X_normed @ X_normed.T
                 mask = torch.triu(torch.ones_like(pmis),diagonal=1)
-                # topic_coherence = (pmis * mask).sum() / mask.sum()
-                topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
+                if origin_df is not None:
+                    # topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
+                    topic_coherence = (pmis * imps * mask).sum() / mask.sum()
+                else:
+                    topic_coherence = (pmis * mask).sum() / mask.sum()
         return topic_coherence
         
     
@@ -296,19 +315,22 @@ class BaseEvaluator(metaclass=ABCMeta):
         logger.info('Best number of clusters: {}, best silhouette score: {:.4f}'.format(best_num, best_score))
         return best_num, best_score
     
-    def get_most_critical_tokens(self, eval_tokens, concept=None, concept_idx=-1):   
+    @staticmethod
+    def get_token_freq(eval_tokens):
+        token_freq_dict = {}
+        for i in np.unique(eval_tokens):
+            token_freq_dict[i] = (eval_tokens==i).sum().item()
+        freq_threshold = np.mean(list(token_freq_dict.values()))
+        return token_freq_dict, freq_threshold
+    
+    def get_most_critical_tokens(self, eval_tokens, concept=None, concept_idx=-1, token_freq_dict=None, freq_threshold=None):   
              
         _, maxlen = eval_tokens.shape[0], eval_tokens.shape[1]
         minibatch = self.cfg['concept_eval_batchsize']
         eval_tokens_tuple = eval_tokens.split(minibatch, dim=0)
         
-        token_freq_dict = {}
-        for i in np.unique(eval_tokens):
-            token_freq_dict[i] = (eval_tokens==i).sum().item()
-        # print('token_freq_dict:',token_freq_dict)
-        # print('values:',token_freq_dict.values())
-        freq_threshold = np.mean(list(token_freq_dict.values()))
-        # print('mean_values:',freq_threshold)
+        if token_freq_dict is None:
+            token_freq_dict, freq_threshold = self.get_token_freq(eval_tokens)
             
         results = []
         for tokens in tqdm(eval_tokens_tuple, desc='Searching the corpus for the most critical token for the current concept'):
@@ -367,8 +389,8 @@ class BaseEvaluator(metaclass=ABCMeta):
             df_ctxt_agg['freq'] = [token_freq_dict[i] for i in df_ctxt_agg['token_idx'].values]
             # df_agg["imp"] = df_agg["imp"] / df_agg['freq']
             # df_ctxt_agg["imp"] = df_ctxt_agg["imp"] / df_ctxt_agg['freq']
-            df_agg = df_agg[df_agg['freq']<=freq_threshold]
-            df_ctxt_agg = df_ctxt_agg[df_ctxt_agg['freq']<=freq_threshold]
+            # df_agg = df_agg[df_agg['freq']<=freq_threshold]
+            # df_ctxt_agg = df_ctxt_agg[df_ctxt_agg['freq']<=freq_threshold]
             result = pd.concat([df_agg, df_ctxt_agg]).sort_values(by=['imp'],ascending=False).reset_index()
             result = result.drop_duplicates(subset=['token'])
             results.append(result[:50])
