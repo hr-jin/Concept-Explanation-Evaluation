@@ -200,7 +200,8 @@ class BaseEvaluator(metaclass=ABCMeta):
                 else:
                     topic_coherence = (pmis * mask).sum() / mask.sum()
         elif self.pmi_type == 'emb_cos':  
-            X_normed = X / X.square().sum(-1).sqrt().unsqueeze(1)
+            # X_normed = X / X.square().sum(-1).sqrt().unsqueeze(1)
+            X_normed = X
             if origin_df is not None:
                 # token_freq = origin_df['freq'].values
                 # freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
