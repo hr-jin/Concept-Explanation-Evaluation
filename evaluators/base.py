@@ -176,19 +176,23 @@ class BaseEvaluator(metaclass=ABCMeta):
                 topic_coherence = (pmis * mask).sum() / mask.sum()
         return topic_coherence
     
-    def get_emb_topic_coherence(self, most_critical_token_idxs):
+    def get_emb_topic_coherence(self, most_critical_token_idxs,origin_df):
         X = self.model.embed.W_E.detach().cpu()[most_critical_token_idxs]
+        token_freq = origin_df['freq'].values
         if self.pmi_type == 'emb_dist':  
             pmis = torch.tensor([[(emb1 - emb2).square().sum(-1).sqrt() for emb2 in X] for emb1 in X])
+            freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
             if X.shape[0] == 1:
                 topic_coherence = 0.
             elif X.shape[0] == 0:
                 topic_coherence = -2.
             else:
                 mask = torch.triu(torch.ones_like(pmis),diagonal=1)
-                topic_coherence = (pmis * mask).sum() / mask.sum()
+                # topic_coherence = (pmis * mask).sum() / mask.sum()
+                topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
         elif self.pmi_type == 'emb_cos':  
             X_normed = X / X.square().sum(-1).sqrt().unsqueeze(1)
+            freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
             if X.shape[0] == 1:
                 topic_coherence = 1.
             elif X.shape[0] == 0:
@@ -196,7 +200,8 @@ class BaseEvaluator(metaclass=ABCMeta):
             else:
                 pmis = X_normed @ X_normed.T
                 mask = torch.triu(torch.ones_like(pmis),diagonal=1)
-                topic_coherence = (pmis * mask).sum() / mask.sum()
+                # topic_coherence = (pmis * mask).sum() / mask.sum()
+                topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
         return topic_coherence
         
     
@@ -295,10 +300,18 @@ class BaseEvaluator(metaclass=ABCMeta):
              
         _, maxlen = eval_tokens.shape[0], eval_tokens.shape[1]
         minibatch = self.cfg['concept_eval_batchsize']
-        eval_tokens = eval_tokens.split(minibatch, dim=0)
+        eval_tokens_tuple = eval_tokens.split(minibatch, dim=0)
+        
+        token_freq_dict = {}
+        for i in np.unique(eval_tokens):
+            token_freq_dict[i] = (eval_tokens==i).sum().item()
+        # print('token_freq_dict:',token_freq_dict)
+        # print('values:',token_freq_dict.values())
+        freq_threshold = np.mean(list(token_freq_dict.values()))
+        # print('mean_values:',freq_threshold)
             
         results = []
-        for tokens in tqdm(eval_tokens, desc='Searching the corpus for the most critical token for the current concept'):
+        for tokens in tqdm(eval_tokens_tuple, desc='Searching the corpus for the most critical token for the current concept'):
             num_tokens = tokens.shape[0] * maxlen
             concept_acts = self.activation_func(tokens, self.model, concept, concept_idx) # minibatch * maxlen
             origin_acts = concept_acts # minibatch * maxlen
@@ -334,7 +347,7 @@ class BaseEvaluator(metaclass=ABCMeta):
                 most_imp_pos = np.where(indices, most_imp_pos , now_pos)
                 most_imp_tokens = np.where(indices, most_imp_tokens , padding_token_id)
                 most_imp_actis = np.where(indices, most_imp_actis , acti_diff)
-
+                     
             tokens_reshaped = tokens.reshape((-1)).cpu().numpy()
             df = pd.DataFrame(data=self.model.to_str_tokens(tokens_reshaped.astype(np.int32)), columns=["token"])
             df_ctxt = pd.DataFrame(data=self.model.to_str_tokens(most_imp_tokens.astype(np.int32)), columns=["token"])
@@ -346,11 +359,23 @@ class BaseEvaluator(metaclass=ABCMeta):
             df_agg = df.groupby('token').agg('max').sort_values(by=['imp'],ascending=False)
             df_ctxt_agg = df_ctxt.groupby('token').agg('max').sort_values(by=['imp'],ascending=False)
 
+            # result = pd.concat([df_agg, df_ctxt_agg]).sort_values(by=['imp'],ascending=False).reset_index()
+            # result = result.drop_duplicates(subset=['token'])
+            # results.append(result[:50])
+            
+            df_agg['freq'] = [token_freq_dict[i] for i in df_agg['token_idx'].values]
+            df_ctxt_agg['freq'] = [token_freq_dict[i] for i in df_ctxt_agg['token_idx'].values]
+            # df_agg["imp"] = df_agg["imp"] / df_agg['freq']
+            # df_ctxt_agg["imp"] = df_ctxt_agg["imp"] / df_ctxt_agg['freq']
+            df_agg = df_agg[df_agg['freq']<=freq_threshold]
+            df_ctxt_agg = df_ctxt_agg[df_ctxt_agg['freq']<=freq_threshold]
             result = pd.concat([df_agg, df_ctxt_agg]).sort_values(by=['imp'],ascending=False).reset_index()
             result = result.drop_duplicates(subset=['token'])
             results.append(result[:50])
         
-        df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx']]
+        # df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx']]
+        
+        df_final = pd.concat(results).groupby('token').agg('max').sort_values(by=['imp'],ascending=False).reset_index()[['token','imp','token_idx','freq']]
         df_final_show = df_final[:self.cfg['topic_len']]
         df_final_show['token'] = df_final_show['token'].apply(lambda x:repr(x))
         print('df_final:\n', df_final_show)

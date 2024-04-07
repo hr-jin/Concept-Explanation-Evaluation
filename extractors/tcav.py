@@ -30,7 +30,7 @@ class TCAVExtractor(nn.Module, BaseExtractor):
     def get_reps(self, concept_examples):
         with torch.no_grad():
             print('\nlen(concept_examples):',len(concept_examples))
-            print('\nconcept_examples:',concept_examples)
+            print('\nconcept_examples[0]:',concept_examples[0])
             inputs = self.tokenizer(concept_examples, max_length=128, truncation=True, padding=True,return_tensors="pt")
             # for sentence in concept_examples:
             #     print('sentence:', sentence)
@@ -91,8 +91,8 @@ class TCAVExtractor(nn.Module, BaseExtractor):
 
         self.concept = torch.tensor(cav).unsqueeze(0)
         logger.info('Acc in training set: {:.2f}, in val set: {:.2f}'.format(np.mean(accuracy_train), np.mean(accuracy_val)))
-        torch.save(cav, "./data/tcav_concept.pt")
-        torch.save(self.classifier, "./data/tcav_classifier.pt")
+        torch.save(cav, "./data/tcav_"+self.cfg['tcav_dataset']+"_concept.pt")
+        torch.save(self.classifier, "./data/tcav_"+self.cfg['tcav_dataset']+"_classifier.pt")
         return self.concept, accuracy_val
     
     def get_concepts(self):
@@ -114,6 +114,6 @@ class TCAVExtractor(nn.Module, BaseExtractor):
             path = cfg['load_path']
         pprint.pprint(cfg)
         self = cls(cfg=cfg, dataloader=dataloader)
-        self.concept = torch.tensor(torch.load("./data/tcav_concept.pt")).unsqueeze(0).to(cfg['device'])
-        self.classifier = torch.load("./data/tcav_classifier.pt")
+        self.concept = torch.tensor(torch.load("./data/tcav_"+cfg['tcav_dataset']+"_concept.pt")).unsqueeze(0).to(cfg['device'])
+        self.classifier = torch.load("./data/tcav_"+cfg['tcav_dataset']+"_classifier.pt")
         return self

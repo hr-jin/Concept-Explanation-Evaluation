@@ -30,19 +30,12 @@ tied_enc_dec=1
 use_bias_d=0
 
 # pythia
-batch_size=32768
+batch_size=8192
 buffer_mult=10
 dict_mult=8
 model_to_interpret="pythia-70m"
 model_dir="/data2/home/haoran/SparseAE-pythia-pile/data/pythia-70m"
-
-# ## gpt2
-# batch_size=8192
-# buffer_mult=1
-# dict_mult=2
-# model_to_interpret="gpt2-small"
-# model_dir=".../data/gpt2-small"     
-# device_list=''
+load_path='/data2/home/haoran/acl2024-concept/acl2024-rebuttal/data/output/model_pythia-70m_layer_3_dictSize_4096_site_resid_post/Iteration10000_Epoch1'
 
 
 # data_dir="/data2/home/haoran/SparseAE-pythia-pile/data/pile_neel/"
@@ -53,16 +46,17 @@ data_dir="/data2/home/haoran/acl2024-concept/acl2024-rebuttal/data/"
 dataset_name="HarmfulQA" 
 dataloader='tcav' # choose from ["ae", "tcav", 'conceptx_naive', 'neuron']
 
+layer=3
 extractor='tcav' # choose from ["ae", "tcav", 'conceptx_ori', 'neuron']
+tcav_dataset='DD'
 evaluator='otc'
-metric_evaluator='vr'
+metric_evaluator='rc'
 return_type='weighted_normed'
 
-load_path='...'
-topic_len=20
+topic_len=10
 
-device='cuda:3'
-layer=3
+device='cuda:0'
+
 
 echo $lr
 echo $l1_coeff
@@ -79,11 +73,11 @@ l1_str=${l1_coeff/./-}
 dict_mult_str=${dict_mult/./-}
 site_str=${site/./-}
 
-log_str="logs/0328_tcav_clfacti_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
+log_str="logs/0407_InTopicDivFreq_tcav_"$tcav_dataset"_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
 
 echo $log_str
 
-# nohup python -u main.py --load_extractor --device_list=$device_list --tokenized --topic_len=$topic_len --dataloader=$dataloader \
+# nohup python -u main.py --load_extractor --device_list=$device_list --tokenized --topic_len=$topic_len --tcav_dataset=$tcav_dataset --dataloader=$dataloader \
 #         --return_type=$return_type --use_bias_d=$use_bias_d --metric_eval_batchsize=$metric_eval_batchsize --val_freq=$val_freq \
 #         --metric_evaluator=$metric_evaluator --concept_eval_batchsize=$concept_eval_batchsize \
 #         --evaluator=$evaluator --load_path=$load_path  --output_dir=$output_dir --data_dir=$data_dir --extractor=$extractor \
@@ -93,7 +87,7 @@ echo $log_str
 #         --site=$site --epoch=$epoch --reinit=$reinit --init_type=$init_type --name_only=$name_only --seed=$seed \
 #         --remove_parallel=$remove_parallel > $log_str 2>&1 &
 
-nohup python -u main.py --device_list=$device_list --topic_len=$topic_len --dataloader=$dataloader \
+nohup python -u main.py --device_list=$device_list --tokenized --topic_len=$topic_len --tcav_dataset=$tcav_dataset --dataloader=$dataloader \
         --return_type=$return_type --use_bias_d=$use_bias_d --metric_eval_batchsize=$metric_eval_batchsize --val_freq=$val_freq \
         --metric_evaluator=$metric_evaluator --concept_eval_batchsize=$concept_eval_batchsize \
         --evaluator=$evaluator --load_path=$load_path  --output_dir=$output_dir --data_dir=$data_dir --extractor=$extractor \

@@ -75,8 +75,16 @@ class AEDataloader(AbstractDataloader):
     @torch.no_grad()
     def get_random_batch(self):
         if self.cfg['tokenized']:
-            tokens = self.data[torch.randperm(len(self.data))[:self.cfg['model_batch_size']]]['tokens']
-            tokens = torch.tensor(tokens)[:, :self.cfg['seq_len']]
+            if self.cfg["model_to_interpret"] == 'pythia-70m':
+                rands = torch.randperm(len(self.data))[:self.cfg['model_batch_size']]
+                tokens = self.data[rands]['tokens']
+                tokens = torch.tensor(tokens)[:, :self.cfg['seq_len']]
+            else:
+                rands = torch.randperm(len(self.data))[:self.cfg['model_batch_size']]
+                # print('rands:', rands)
+                # print('self.data:\n',self.data)
+                tokens = self.data[rands]['tokens']
+                tokens = torch.tensor(tokens)[:, :self.cfg['seq_len']]
         else:    
             sentences = self.data[torch.randperm(len(self.data))[:self.cfg['model_batch_size']]]
             inputs = self.tokenizer(sentences, max_length=128, truncation=True, padding=True,return_tensors="pt")

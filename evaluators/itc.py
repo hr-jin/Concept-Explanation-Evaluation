@@ -54,9 +54,9 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
             best_num, best_score = self.get_silhouette_score(np.array(origin_critical_token_idxs))
             itc = best_score / best_num
         elif self.pmi_type == 'emb_dist':
-            itc = -self.get_emb_topic_coherence(np.array(origin_critical_token_idxs))
+            itc = -self.get_emb_topic_coherence(np.array(origin_critical_token_idxs),origin_df)
         elif self.pmi_type == 'emb_cos':
-            itc = self.get_emb_topic_coherence(np.array(origin_critical_token_idxs))
+            itc = self.get_emb_topic_coherence(np.array(origin_critical_token_idxs),origin_df)
         
         logger.info('Input Topic Coherence Metric ({}): {:.4f}'.format(self.pmi_type, itc))    
         if return_tokens:
