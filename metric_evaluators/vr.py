@@ -41,7 +41,9 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         most_preferred_tokens = [None for i in range(len(concept_idxs))]
         pre_metrics = dict()
         pre_concept_acts = dict()
+        print('get token freq...')
         token_freq_dict, freq_threshold = BaseMetricEvaluator.get_token_freq(eval_tokens)
+        print('finished getting token freq...')
         for name, evaluator in evaluator_dict.items():   
             logger.info('Evaluating {} ...'.format(name))   
             concept_metric_list = []    

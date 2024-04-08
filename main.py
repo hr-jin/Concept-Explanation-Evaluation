@@ -116,7 +116,7 @@ def main():
     
     # concept_idxs = [i for i in range(100)]
     # concept_idxs = [i for i in range(1)]
-    concept_idxs = concept_idxs[180:]
+    concept_idxs = concept_idxs[180:200]
     
     token_list = []
     origin_token_list = []
@@ -130,42 +130,42 @@ def main():
     print('len(origin_token_list):',len(origin_token_list))
     evaluator_dict = dict()
     
-    # cfg['evaluator'] = 'faithfulness'
-    # for disturb in ['gradient','ablation']: 
-    #     for measure_obj in ['loss','next_logit','pred_logit','logits']: 
+    cfg['evaluator'] = 'faithfulness'
+    for disturb in ['gradient','ablation']: 
+        for measure_obj in ['loss','next_logit','pred_logit','logits']: 
 
-    #         if measure_obj == 'logits':
-    #             for corr_func in ['KL_div']:
-    #                 if disturb == 'gradient':
-    #                     continue
-    #                 for topk in [1000]:
-    #                     extractor_str = disturb + '_' + measure_obj + '_' + corr_func + '_top' + str(topk)
-    #                     evaluator_dict[extractor_str] = evaluator_factory(
-    #                     cfg, 
-    #                     extractor.activation_func, 
-    #                     model,
-    #                     concept=None, 
-    #                     concept_idx=None, 
-    #                     disturb=disturb, 
-    #                     measure_obj=measure_obj, 
-    #                     corr_func=corr_func, 
-    #                     class_idx=-1, 
-    #                     logits_corr_topk=topk,
-    #                     )
-    #         else:
-    #             extractor_str = disturb + '_' + measure_obj
-    #             evaluator_dict[extractor_str] = evaluator_factory(
-    #                 cfg, 
-    #                 extractor.activation_func, 
-    #                 model,
-    #                 concept=None, 
-    #                 concept_idx=None, 
-    #                 disturb=disturb, 
-    #                 measure_obj=measure_obj, 
-    #                 corr_func='KL_div', 
-    #                 class_idx=-1, 
-    #                 logits_corr_topk=None,
-    #             )
+            if measure_obj == 'logits':
+                for corr_func in ['KL_div']:
+                    if disturb == 'gradient':
+                        continue
+                    for topk in [1000]:
+                        extractor_str = disturb + '_' + measure_obj + '_' + corr_func + '_top' + str(topk)
+                        evaluator_dict[extractor_str] = evaluator_factory(
+                        cfg, 
+                        extractor.activation_func, 
+                        model,
+                        concept=None, 
+                        concept_idx=None, 
+                        disturb=disturb, 
+                        measure_obj=measure_obj, 
+                        corr_func=corr_func, 
+                        class_idx=-1, 
+                        logits_corr_topk=topk,
+                        )
+            else:
+                extractor_str = disturb + '_' + measure_obj
+                evaluator_dict[extractor_str] = evaluator_factory(
+                    cfg, 
+                    extractor.activation_func, 
+                    model,
+                    concept=None, 
+                    concept_idx=None, 
+                    disturb=disturb, 
+                    measure_obj=measure_obj, 
+                    corr_func='KL_div', 
+                    class_idx=-1, 
+                    logits_corr_topk=None,
+                )
     
     cfg['evaluator'] = 'itc'
     evaluator_dict.update({

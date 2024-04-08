@@ -54,7 +54,7 @@ return_type='weighted_normed'
 
 topic_len=10
 
-device='cuda:4'
+device='cuda:1'
 
 
 echo $lr
@@ -72,7 +72,7 @@ l1_str=${l1_coeff/./-}
 dict_mult_str=${dict_mult/./-}
 site_str=${site/./-}
 
-log_str="logs/0407_debug_"$tcav_dataset"_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
+log_str="logs/0408_debug_inputcosdot_"$tcav_dataset"_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
 
 echo $log_str
 

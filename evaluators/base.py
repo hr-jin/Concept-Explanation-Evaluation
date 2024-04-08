@@ -179,15 +179,7 @@ class BaseEvaluator(metaclass=ABCMeta):
     def get_emb_topic_coherence(self, most_critical_token_idxs, origin_df=None):
         X = self.model.embed.W_E.detach().cpu()[most_critical_token_idxs]
         if self.pmi_type == 'emb_dist':  
-            pmis = torch.tensor([[(emb1 - emb2).square().sum(-1).sqrt() for emb2 in X] for emb1 in X])
-            if origin_df is not None:
-                # token_freq = origin_df['freq'].values
-                # freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
-                token_imp = origin_df['imp'].values
-                imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
-                imps =  imps - imps.max()
-                imps = torch.exp(imps)
-                imps = imps / imps.sum()
+            pmis = torch.tensor([[(emb1 - emb2).square().sum(-1).sqrt() for emb2 in X] for emb1 in X])                
             if X.shape[0] == 1:
                 topic_coherence = 0.
             elif X.shape[0] == 0:
@@ -195,21 +187,25 @@ class BaseEvaluator(metaclass=ABCMeta):
             else:
                 mask = torch.triu(torch.ones_like(pmis),diagonal=1)
                 if origin_df is not None:
+                    # token_freq = origin_df['freq'].values
+                    # freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
+                    token_imp = origin_df['imp'].values
+                    token_imp = torch.tensor(token_imp).square()
+                    imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
+                    # imps = torch.where(mask > 0, imps, -10**8)
+                    imps = imps * mask
+                    imps = imps.square()
+                    # imps = imps - imps.max()
+                    # imps = torch.exp(imps)
+                    imps = imps / imps.sum()
+                    print('imps:',imps)
                     # topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
                     topic_coherence = (pmis * imps * mask).sum() / mask.sum()
                 else:
                     topic_coherence = (pmis * mask).sum() / mask.sum()
         elif self.pmi_type == 'emb_cos':  
-            # X_normed = X / X.square().sum(-1).sqrt().unsqueeze(1)
-            X_normed = X
-            if origin_df is not None:
-                # token_freq = origin_df['freq'].values
-                # freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
-                token_imp = origin_df['imp'].values
-                imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
-                imps =  imps - imps.max()
-                imps = torch.exp(imps)
-                imps = imps / imps.sum()
+            X_normed = X / X.square().sum(-1).sqrt().unsqueeze(1)
+            # X_normed = X                
             if X.shape[0] == 1:
                 topic_coherence = 1.
             elif X.shape[0] == 0:
@@ -218,6 +214,18 @@ class BaseEvaluator(metaclass=ABCMeta):
                 pmis = X_normed @ X_normed.T
                 mask = torch.triu(torch.ones_like(pmis),diagonal=1)
                 if origin_df is not None:
+                    # token_freq = origin_df['freq'].values
+                    # freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
+                    token_imp = origin_df['imp'].values
+                    token_imp = torch.tensor(token_imp).square()
+                    imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
+                    # imps = torch.where(mask > 0, imps, -10**8)
+                    imps = imps * mask
+                    imps = imps.square()
+                    # imps = imps - imps.max()
+                    # imps = torch.exp(imps)
+                    imps = imps / imps.sum()
+                    print('imps:',imps)
                     # topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
                     topic_coherence = (pmis * imps * mask).sum() / mask.sum()
                 else:
@@ -285,7 +293,7 @@ class BaseEvaluator(metaclass=ABCMeta):
         )[0][0]
         top_logits, topk_indices = torch.topk(logits, k=self.cfg['topic_len'], dim=0, sorted=True)
         most_preferred_tokens = np.array([
-            token.strip().lower() 
+            repr(token)
             for token in self.model.to_str_tokens(topk_indices)
         ])
         return top_logits, most_preferred_tokens, topk_indices.detach().cpu().numpy()
