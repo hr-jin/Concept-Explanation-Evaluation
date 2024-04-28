@@ -9,15 +9,18 @@ from sklearn.cluster import KMeans
 from sklearn import metrics
 from utils import *
 import torch.nn.functional as F
+import time
 
 class BaseEvaluator(metaclass=ABCMeta):
     def __init__(
         self, 
         cfg, 
         activation_func, 
+        hidden_state_func,
         model
     ):
         super().__init__()
+        self.hidden_state_func = hidden_state_func
         self.activation_func = activation_func
         self.cfg = cfg
         self.model = model
@@ -187,20 +190,16 @@ class BaseEvaluator(metaclass=ABCMeta):
             else:
                 mask = torch.triu(torch.ones_like(pmis),diagonal=1)
                 if origin_df is not None:
-                    # token_freq = origin_df['freq'].values
-                    # freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
-                    token_imp = origin_df['imp'].values
-                    token_imp = torch.tensor(token_imp).square()
-                    imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
-                    # imps = torch.where(mask > 0, imps, -10**8)
-                    imps = imps * mask
-                    imps = imps.square()
-                    # imps = imps - imps.max()
-                    # imps = torch.exp(imps)
-                    imps = imps / imps.sum()
-                    print('imps:',imps)
-                    # topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
-                    topic_coherence = (pmis * imps * mask).sum() / mask.sum()
+                    # token_imp = origin_df['imp'].values
+                    # token_imp = torch.tensor(token_imp).square()
+                    # imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
+                    # imps = imps * mask
+                    # imps = imps.square()
+                    # imps = imps / imps.sum()
+                    # print('imps:',imps)
+                    # topic_coherence = (pmis * imps * mask).sum() / mask.sum()
+                    
+                    topic_coherence = (pmis * mask).sum() / mask.sum()
                 else:
                     topic_coherence = (pmis * mask).sum() / mask.sum()
         elif self.pmi_type == 'emb_cos':  
@@ -214,20 +213,16 @@ class BaseEvaluator(metaclass=ABCMeta):
                 pmis = X_normed @ X_normed.T
                 mask = torch.triu(torch.ones_like(pmis),diagonal=1)
                 if origin_df is not None:
-                    # token_freq = origin_df['freq'].values
-                    # freqs = torch.tensor([[1 / (freq1 * freq2) for freq2 in token_freq] for freq1 in token_freq])
-                    token_imp = origin_df['imp'].values
-                    token_imp = torch.tensor(token_imp).square()
-                    imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
-                    # imps = torch.where(mask > 0, imps, -10**8)
-                    imps = imps * mask
-                    imps = imps.square()
-                    # imps = imps - imps.max()
-                    # imps = torch.exp(imps)
-                    imps = imps / imps.sum()
-                    print('imps:',imps)
-                    # topic_coherence = (pmis * freqs * mask).sum() / mask.sum()
-                    topic_coherence = (pmis * imps * mask).sum() / mask.sum()
+                    # token_imp = origin_df['imp'].values
+                    # token_imp = torch.tensor(token_imp).square()
+                    # imps = torch.tensor([[(imp1 * imp2) for imp2 in token_imp] for imp1 in token_imp])
+                    # imps = imps * mask
+                    # imps = imps.square()
+                    # imps = imps / imps.sum()
+                    # print('imps:',imps)
+                    # topic_coherence = (pmis * imps * mask).sum() / mask.sum()
+                    
+                    topic_coherence = (pmis * mask).sum() / mask.sum()
                 else:
                     topic_coherence = (pmis * mask).sum() / mask.sum()
         return topic_coherence
@@ -332,7 +327,7 @@ class BaseEvaluator(metaclass=ABCMeta):
         freq_threshold = np.mean(list(token_freq_dict.values()))
         return token_freq_dict, freq_threshold
     
-    def get_most_critical_tokens(self, eval_tokens, concept=None, concept_idx=-1, token_freq_dict=None, freq_threshold=None):   
+    def get_most_critical_tokens(self, eval_tokens, concept=None, concept_idx=-1, token_freq_dict=None, freq_threshold=None, hidden_states_all=None):   
              
         _, maxlen = eval_tokens.shape[0], eval_tokens.shape[1]
         minibatch = self.cfg['concept_eval_batchsize']
@@ -342,12 +337,17 @@ class BaseEvaluator(metaclass=ABCMeta):
             token_freq_dict, freq_threshold = self.get_token_freq(eval_tokens)
             
         results = []
+        token_idx = 0
         for tokens in tqdm(eval_tokens_tuple, desc='Searching the corpus for the most critical token for the current concept'):
+            
             num_tokens = tokens.shape[0] * maxlen
-            concept_acts = self.activation_func(tokens, self.model, concept, concept_idx) # minibatch * maxlen
+            hidden_states = hidden_states_all[token_idx][0].to(self.cfg['device'])
+            concept_acts = self.activation_func(tokens, self.model, concept, concept_idx, hidden_states=hidden_states) # minibatch * maxlen
             origin_acts = concept_acts # minibatch * maxlen
             
-            print('concept_acts.shape:',concept_acts.shape)
+            print('\nconcept_acts.shape:',concept_acts.shape)
+            logger.info('tokens.shape:{}'.format(tokens.shape))
+            
 
             most_imp_actis = np.zeros([num_tokens])
             most_imp_pos = np.zeros([num_tokens])
@@ -355,11 +355,20 @@ class BaseEvaluator(metaclass=ABCMeta):
             imp_this_token = np.zeros([num_tokens])
 
             padding_id = self.model.tokenizer.unk_token_id
+            
+            ae_time_total, np_time_total, device_moving_total = 0, 0, 0
             for padding_position in range(maxlen):
                 tmp_tokens = tokens.clone()
                 tmp_tokens[:,padding_position] = padding_id
-                concept_acts = self.activation_func(tmp_tokens, self.model, concept, concept_idx) # minibatch * maxlen
-                
+                # if (padding_position == 3):
+                #     print(concept.device)
+                # T1 = time.time()
+                # concept_acts = self.activation_func(tmp_tokens, self.model, concept, concept_idx) # minibatch * maxlen
+                T1 = time.time()
+                hidden_states = hidden_states_all[token_idx][1+padding_position].to(self.cfg['device'])
+                T15 = time.time()
+                concept_acts, ae_time = self.activation_func(tmp_tokens, self.model, concept, concept_idx, return_time=True, hidden_states=hidden_states) # minibatch * maxlen
+                T2 = time.time()
                 acti_diff = origin_acts - concept_acts
                 acti_diff = acti_diff.detach().cpu().numpy()
 
@@ -378,6 +387,16 @@ class BaseEvaluator(metaclass=ABCMeta):
                 most_imp_pos = np.where(indices, most_imp_pos , now_pos)
                 most_imp_tokens = np.where(indices, most_imp_tokens , padding_token_id)
                 most_imp_actis = np.where(indices, most_imp_actis , acti_diff)
+                T3 = time.time()
+                
+                device_moving_total += T15 - T1
+                ae_time_total += ae_time
+                np_time_total += T3 - T2
+                
+            token_idx += 1
+            print('device moving cost:%s s' % ((device_moving_total)))
+            print('ae calculating cost:%s s' % ((ae_time_total)))
+            print('numpy operation cost:%s s' % ((np_time_total)))
                      
             tokens_reshaped = tokens.reshape((-1)).cpu().numpy()
             df = pd.DataFrame(data=self.model.to_str_tokens(tokens_reshaped.astype(np.int32)), columns=["token"])

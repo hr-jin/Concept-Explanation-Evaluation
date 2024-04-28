@@ -5,6 +5,8 @@ from logger import logger
 import numpy as np
 import datetime
 from scipy.stats import kendalltau, pearsonr
+from tqdm import tqdm
+import time
 
 class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
     def __init__(self, cfg):
@@ -44,9 +46,36 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         print('get token freq...')
         token_freq_dict, freq_threshold = BaseMetricEvaluator.get_token_freq(eval_tokens)
         print('finished getting token freq...')
+        hidden_states_all = []
+        
         for name, evaluator in evaluator_dict.items():   
             logger.info('Evaluating {} ...'.format(name))   
             concept_metric_list = []    
+            
+            if ('itc' in name) and (len(hidden_states_all) == 0):
+                _, maxlen = eval_tokens.shape[0], eval_tokens.shape[1]
+                minibatch = self.cfg['concept_eval_batchsize']
+                eval_tokens_tuple = eval_tokens.split(minibatch, dim=0)
+                padding_id = evaluator.model.tokenizer.unk_token_id
+                total_movetime = 0
+                T1 = time.time()
+                for tokens in tqdm(eval_tokens_tuple, desc='model forward: get hidden states'):
+                    hidden_states_tmp = [evaluator.hidden_state_func(tokens, evaluator.model)]
+                    for padding_position in range(maxlen):
+                        tmp_tokens = tokens.clone().to(self.cfg['device'])
+                        tmp_tokens[:,padding_position] = padding_id
+                        hidden_states = evaluator.hidden_state_func(tmp_tokens, evaluator.model)
+                        T3 = time.time()
+                        hidden_states_tmp.append(hidden_states.to('cpu'))
+                        T4 = time.time()
+                        total_movetime += T4 - T3
+                    print(len(hidden_states_tmp))
+                    hidden_states_all.append(hidden_states_tmp)
+                print(len(hidden_states_all))
+                T2 = time.time()
+                print('\nhidden states calculating cost:%s s' % ((T2-T1)))
+                print('first device moving cost:%s s' % ((total_movetime)))
+                    
             for j, concept_idx in enumerate(concept_idxs):
                 concept = concepts[j]
                 evaluator.update_concept(concept, concept_idx) 
@@ -59,7 +88,8 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
                                                                                         concept, 
                                                                                         concept_idx,
                                                                                         token_freq_dict,
-                                                                                        freq_threshold)
+                                                                                        freq_threshold,
+                                                                                        hidden_states_all)
                         topic_tokens[j] = tmp_tokens
                         topic_idxs[j] = tmp_idxs
                         origin_dfs[j] = origin_df

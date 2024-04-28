@@ -1,6 +1,7 @@
 from .base import AbstractDataset
 import os
 import datasets
+import numpy as np
 
 class PileDataset(AbstractDataset):
     def __init__(self, cfg):
@@ -24,6 +25,7 @@ class PileDataset(AbstractDataset):
             data = datasets.load_from_disk(os.path.join(data_dir, 'pile.hf'))
         else:
             data = None
+        print('seqlen of dataset:', np.array(data[0]['tokens']).shape)
         self.data = data
         
 

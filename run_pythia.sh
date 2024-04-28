@@ -52,9 +52,9 @@ evaluator='otc'
 metric_evaluator='vr'
 return_type='weighted_normed'
 
-topic_len=10
+topic_len=20
 
-device='cuda:1'
+device='cuda:5'
 
 
 echo $lr
@@ -72,11 +72,11 @@ l1_str=${l1_coeff/./-}
 dict_mult_str=${dict_mult/./-}
 site_str=${site/./-}
 
-log_str="logs/0408_debug_inputcosdot_"$tcav_dataset"_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
+log_str="logs/timeCheck_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
 
 echo $log_str
 
-nohup python -u main.py --load_extractor --device_list=$device_list --tokenized --topic_len=$topic_len --tcav_dataset=$tcav_dataset --dataloader=$dataloader \
+nohup python -u main_pythia.py --load_extractor --device_list=$device_list --tokenized --topic_len=$topic_len --tcav_dataset=$tcav_dataset --dataloader=$dataloader \
         --return_type=$return_type --use_bias_d=$use_bias_d --metric_eval_batchsize=$metric_eval_batchsize --val_freq=$val_freq \
         --metric_evaluator=$metric_evaluator --concept_eval_batchsize=$concept_eval_batchsize \
         --evaluator=$evaluator --load_path=$load_path  --output_dir=$output_dir --data_dir=$data_dir --extractor=$extractor \
@@ -86,7 +86,7 @@ nohup python -u main.py --load_extractor --device_list=$device_list --tokenized 
         --site=$site --epoch=$epoch --reinit=$reinit --init_type=$init_type --name_only=$name_only --seed=$seed \
         --remove_parallel=$remove_parallel > $log_str 2>&1 &
 
-# nohup python -u main.py --device_list=$device_list --tokenized --topic_len=$topic_len --tcav_dataset=$tcav_dataset --dataloader=$dataloader \
+# nohup python -u main_pythia.py --device_list=$device_list --tokenized --topic_len=$topic_len --tcav_dataset=$tcav_dataset --dataloader=$dataloader \
 #         --return_type=$return_type --use_bias_d=$use_bias_d --metric_eval_batchsize=$metric_eval_batchsize --val_freq=$val_freq \
 #         --metric_evaluator=$metric_evaluator --concept_eval_batchsize=$concept_eval_batchsize \
 #         --evaluator=$evaluator --load_path=$load_path  --output_dir=$output_dir --data_dir=$data_dir --extractor=$extractor \

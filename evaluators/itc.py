@@ -8,6 +8,7 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         self, 
         cfg, 
         activation_func, 
+        hidden_state_func,
         model, 
         concept=None, 
         concept_idx=-1, 
@@ -15,7 +16,7 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         
     ):
         nn.Module.__init__(self)
-        BaseEvaluator.__init__(self, cfg, activation_func, model)
+        BaseEvaluator.__init__(self, cfg, activation_func, hidden_state_func, model)
         self.concept = concept
         self.concept_idx = concept_idx
         self.pmi_type = pmi_type
@@ -42,6 +43,7 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         origin_df=None, 
         token_freq_dict=None, 
         freq_threshold=None,
+        hidden_states_all=None,
         **kwargs
     ):
         if topic_tokens is None:
@@ -53,7 +55,8 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
                                                 self.concept, 
                                                 self.concept_idx,
                                                 token_freq_dict,
-                                                freq_threshold
+                                                freq_threshold,
+                                                hidden_states_all
                                             )
         else:
             most_critical_tokens = topic_tokens

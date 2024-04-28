@@ -11,6 +11,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         self, 
         cfg, 
         activation_func, 
+        hidden_state_func,
         model, 
         concept=None, 
         concept_idx=-1, 
@@ -21,7 +22,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         logits_corr_topk=None,
     ):
         nn.Module.__init__(self)
-        BaseEvaluator.__init__(self, cfg, activation_func, model)
+        BaseEvaluator.__init__(self, cfg, activation_func, hidden_state_func, model)
         self.concept = concept
         self.concept_idx = concept_idx
         self.disturb = disturb

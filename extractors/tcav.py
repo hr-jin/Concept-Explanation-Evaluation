@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from logger import logger
 import json
 import pprint
+import time
 
 class TCAVExtractor(nn.Module, BaseExtractor):
     
@@ -49,9 +50,24 @@ class TCAVExtractor(nn.Module, BaseExtractor):
         return concept_repres
     
     @torch.no_grad()
-    def activation_func(self, tokens, model, concept=None, concept_idx=None):    
+    def hidden_state_func(self, tokens, model, return_time=False):
+        T1 = time.time()
         _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
         hidden_states = cache[self.cfg["act_name"]]
+        T2 = time.time()
+        if return_time:
+            return hidden_states, T2 - T1
+        return hidden_states
+    
+    @torch.no_grad()
+    def activation_func(self, tokens, model, concept=None, concept_idx=None, hidden_states=None, return_time=False):
+        
+        if hidden_states is None:
+            # _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
+            # hidden_states = cache[self.cfg["act_name"]]
+            hidden_states = self.hidden_state_func(self, tokens, model)
+        
+        T2 = time.time()
     
         assert tokens.shape[1] == hidden_states.shape[1]
         
@@ -62,6 +78,9 @@ class TCAVExtractor(nn.Module, BaseExtractor):
         
         # results = (hidden_states * concept).sum(-1) / (concept * concept).sum()
         results = torch.tensor(self.classifier.predict_proba(hidden_states.cpu().numpy())[:,1]).to(self.cfg['device'])
+        T3 = time.time()
+        if return_time:
+            return results, T3-T2
         return results
    
     def extract_concepts(self, model):
