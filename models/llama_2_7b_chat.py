@@ -12,17 +12,17 @@ class Llama2Chat7B(BaseModel):
     
     @classmethod
     def code(cls):
-        return 'llama-7b-chat'
+        return 'llama-2-7b-chat'
     
-    # def load_model(self):
-    #     model_name = self.cfg['model_to_interpret']
-    #     model_path = self.cfg['model_dir']
-    #     device = self.cfg['device']
-    #     if model_path != '':
-    #         model = HookedTransformer.from_pretrained(model_path).to(device)
-    #     else:
-    #         model = HookedTransformer.from_pretrained(model_name).to(device)
-    #     self.model = model
+    def load_model(self):
+        model_name = self.cfg['model_to_interpret']
+        model_path = self.cfg['model_dir']
+        device = self.cfg['device']
+        if model_path != '':
+            model = HookedTransformer.from_pretrained(model_path).to(device)
+        else:
+            model = HookedTransformer.from_pretrained(model_name).to(device)
+        self.model = model
         
     def load_model(self):
         model_name = self.cfg['model_to_interpret']
@@ -66,7 +66,7 @@ class Llama2Chat7B(BaseModel):
                 hf_model.requires_grad_(True)
                 self.tokenizer = AutoTokenizer.from_pretrained(model_path)
                 
-                self.tokenizer.add_special_tokens({'pad_token': '<unk>'})
+
                 self.model = HookedTransformer.from_pretrained(model_name,
                                                         n_devices=n_devices,
                                                         device=device,
@@ -76,9 +76,10 @@ class Llama2Chat7B(BaseModel):
                                                         center_writing_weights=False, 
                                                         center_unembed=False, 
                                                         hf_model=hf_model, 
-                                                        tokenizer=self.tokenizer)
-                self.model.tokenizer.add_special_tokens({'pad_token': '<unk>'})
+                                                        tokenizer=tokenizer)
                 
+                self.tokenizer.add_special_tokens({'pad_token': '<unk>'})
+                self.model.tokenizer.add_special_tokens({'pad_token': '<unk>'})
             else:
                 hf_model = LlamaForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16)
                 hf_model.eval()

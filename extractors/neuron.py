@@ -2,7 +2,6 @@ from .base import BaseExtractor
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import time
 
 class Neuron(nn.Module, BaseExtractor):
     """
@@ -39,24 +38,7 @@ class Neuron(nn.Module, BaseExtractor):
         return self.concepts
         
     @torch.no_grad()
-    def hidden_state_func(self, tokens, model, return_time=False):
-        T1 = time.time()
-        _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
-        hidden_states = cache[self.cfg["act_name"]]
-        T2 = time.time()
-        if return_time:
-            return hidden_states, T2 - T1
-        return hidden_states
-    
-    @torch.no_grad()
-    def activation_func(self, tokens, model, concept=None, concept_idx=None, hidden_states=None, return_time=False):
-        
-        if hidden_states is None:
-            # _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
-            # hidden_states = cache[self.cfg["act_name"]]
-            hidden_states = self.hidden_state_func(self, tokens, model)
-        
-        T2 = time.time()
+    def activation_func(self, tokens, model, concept=None, concept_idx=None):    
         _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
         hidden_states = cache[self.cfg["act_name"]]
     
@@ -71,7 +53,4 @@ class Neuron(nn.Module, BaseExtractor):
             results = (hidden_states * concept).sum(-1) / (concept * concept).sum()
         else:
             results = (hidden_states * self.concepts[concept_idx, :]).sum(-1) / (concept * concept).sum()
-        T3 = time.time()
-        if return_time:
-            return results, T3-T2
         return results
