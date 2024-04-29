@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from logger import logger
 import json
 import pprint
+import time
 
 class TCAVExtractor(nn.Module, BaseExtractor):
     
@@ -29,7 +30,12 @@ class TCAVExtractor(nn.Module, BaseExtractor):
     
     def get_reps(self, concept_examples):
         with torch.no_grad():
+            print('\nlen(concept_examples):',len(concept_examples))
+            print('\nconcept_examples[0]:',concept_examples[0])
             inputs = self.tokenizer(concept_examples, max_length=128, truncation=True, padding=True,return_tensors="pt")
+            # for sentence in concept_examples:
+            #     print('sentence:', sentence)
+            #     self.tokenizer(concept_examples, max_length=128, truncation=True, padding=True,return_tensors="pt")
             inputs = inputs.to('cpu')
             _, cache = self.model.run_with_cache(inputs['input_ids'], names_filter=[self.act_name])
             concept_repres = cache[self.act_name].cpu().detach().numpy()
@@ -44,9 +50,24 @@ class TCAVExtractor(nn.Module, BaseExtractor):
         return concept_repres
     
     @torch.no_grad()
-    def activation_func(self, tokens, model, concept=None, concept_idx=None):    
+    def hidden_state_func(self, tokens, model, return_time=False):
+        T1 = time.time()
         _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
         hidden_states = cache[self.cfg["act_name"]]
+        T2 = time.time()
+        if return_time:
+            return hidden_states, T2 - T1
+        return hidden_states
+    
+    @torch.no_grad()
+    def activation_func(self, tokens, model, concept=None, concept_idx=None, hidden_states=None, return_time=False):
+        
+        if hidden_states is None:
+            # _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
+            # hidden_states = cache[self.cfg["act_name"]]
+            hidden_states = self.hidden_state_func(self, tokens, model)
+        
+        T2 = time.time()
     
         assert tokens.shape[1] == hidden_states.shape[1]
         
@@ -55,10 +76,11 @@ class TCAVExtractor(nn.Module, BaseExtractor):
         else: 
             hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
         
-        if concept_idx == None:
-            results = (hidden_states * concept).sum(-1) / (concept * concept).sum()
-        else:
-            results = (hidden_states * self.concept[concept_idx, :]).sum(-1) / (concept * concept).sum()
+        # results = (hidden_states * concept).sum(-1) / (concept * concept).sum()
+        results = torch.tensor(self.classifier.predict_proba(hidden_states.cpu().numpy())[:,1]).to(self.cfg['device'])
+        T3 = time.time()
+        if return_time:
+            return results, T3-T2
         return results
    
     def extract_concepts(self, model):
@@ -71,8 +93,10 @@ class TCAVExtractor(nn.Module, BaseExtractor):
         X = np.vstack((positive_embedding, negative_embedding))
         Y = np.concatenate((pos_labels, neg_labels))
 
-        x_train, x_val, y_train, y_val = train_test_split(X, Y, random_state=0)
-        self.classifier = LogisticRegression(solver='saga', max_iter=10000)
+        x_train, x_val, y_train, y_val = train_test_split(X, Y, 
+                                                          test_size=0.2,
+                                                          random_state=3)
+        self.classifier = LogisticRegression(solver='liblinear', max_iter=50000)
         self.classifier.fit(x_train, y_train)
         
         predictions_val = self.classifier.predict(x_val)
@@ -86,8 +110,8 @@ class TCAVExtractor(nn.Module, BaseExtractor):
 
         self.concept = torch.tensor(cav).unsqueeze(0)
         logger.info('Acc in training set: {:.2f}, in val set: {:.2f}'.format(np.mean(accuracy_train), np.mean(accuracy_val)))
-        torch.save(cav, "./data/tcav_concept.pt")
-        torch.save(self.classifier, "./data/tcav_classifier.pt")
+        torch.save(cav, "./data/tcav_"+self.cfg['tcav_dataset']+"_concept.pt")
+        torch.save(self.classifier, "./data/tcav_"+self.cfg['tcav_dataset']+"_classifier.pt")
         return self.concept, accuracy_val
     
     def get_concepts(self):
@@ -109,6 +133,6 @@ class TCAVExtractor(nn.Module, BaseExtractor):
             path = cfg['load_path']
         pprint.pprint(cfg)
         self = cls(cfg=cfg, dataloader=dataloader)
-        self.concept = torch.tensor(torch.load("./data/tcav_concept.pt")).unsqueeze(0).to(cfg['device'])
-        self.classifier = torch.load("./data/tcav_classifier.pt")
+        self.concept = torch.tensor(torch.load("./data/tcav_"+cfg['tcav_dataset']+"_concept.pt")).unsqueeze(0).to(cfg['device'])
+        self.classifier = torch.load("./data/tcav_"+cfg['tcav_dataset']+"_classifier.pt")
         return self

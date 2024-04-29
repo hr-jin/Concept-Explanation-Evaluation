@@ -8,6 +8,7 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         self, 
         cfg, 
         activation_func, 
+        hidden_state_func,
         model, 
         concept=None, 
         concept_idx=-1, 
@@ -15,7 +16,7 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         
     ):
         nn.Module.__init__(self)
-        BaseEvaluator.__init__(self, cfg, activation_func, model)
+        BaseEvaluator.__init__(self, cfg, activation_func, hidden_state_func, model)
         self.concept = concept
         self.concept_idx = concept_idx
         self.pmi_type = pmi_type
@@ -32,9 +33,31 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         self.pmi_type = pmi_type
         
     
-    def get_metric(self, eval_tokens, topic_tokens=None, topic_idxs=None, origin_topic_idxs=None, return_tokens=False, **kwargs):
+    def get_metric(
+        self, 
+        eval_tokens, 
+        topic_tokens=None, 
+        topic_idxs=None, 
+        origin_topic_idxs=None, 
+        return_tokens=False, 
+        origin_df=None, 
+        token_freq_dict=None, 
+        freq_threshold=None,
+        hidden_states_all=None,
+        **kwargs
+    ):
         if topic_tokens is None:
-            most_critical_tokens, most_critical_token_idxs, origin_df, origin_critical_token_idxs = self.get_most_critical_tokens(eval_tokens, self.concept, self.concept_idx)
+            (most_critical_tokens, 
+             most_critical_token_idxs, 
+             origin_df, 
+             origin_critical_token_idxs) = self.get_most_critical_tokens(
+                                                eval_tokens, 
+                                                self.concept, 
+                                                self.concept_idx,
+                                                token_freq_dict,
+                                                freq_threshold,
+                                                hidden_states_all
+                                            )
         else:
             most_critical_tokens = topic_tokens
             most_critical_token_idxs = topic_idxs
@@ -54,9 +77,9 @@ class InputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
             best_num, best_score = self.get_silhouette_score(np.array(origin_critical_token_idxs))
             itc = best_score / best_num
         elif self.pmi_type == 'emb_dist':
-            itc = -self.get_emb_topic_coherence(np.array(origin_critical_token_idxs))
+            itc = -self.get_emb_topic_coherence(np.array(origin_critical_token_idxs),origin_df)
         elif self.pmi_type == 'emb_cos':
-            itc = self.get_emb_topic_coherence(np.array(origin_critical_token_idxs))
+            itc = self.get_emb_topic_coherence(np.array(origin_critical_token_idxs),origin_df)
         
         logger.info('Input Topic Coherence Metric ({}): {:.4f}'.format(self.pmi_type, itc))    
         if return_tokens:
