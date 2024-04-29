@@ -55,12 +55,12 @@ class AEDataloader(AbstractDataloader):
                             tokens = torch.tensor(tokens)
                         else:    
                             sentences = self.data[self.token_pointer:self.token_pointer+self.cfg["model_batch_size"]]
-                            inputs = self.tokenizer(sentences, max_length=self.cfg['seq_len'], truncation=True, padding=True,return_tensors="pt")
+                            inputs = self.tokenizer(sentences, max_length=128, truncation=True, padding=True,return_tensors="pt")
                             inputs = inputs.to('cpu')
                             tokens = inputs['input_ids']
-                        print(tokens.shape)
+                        # print(tokens.dtype)
                         tokens = tokens[:, :self.cfg['seq_len']]
-                        
+                        print(tokens.shape[0])
                         tokens[:, 0] = self.model.tokenizer.bos_token_id
                         _, cache = self.model.run_with_cache(tokens, names_filter=self.cfg["act_name"], remove_batch_dim=False)
                         acts = cache[self.cfg["act_name"]].reshape(-1, self.cfg["act_size"])
@@ -75,16 +75,8 @@ class AEDataloader(AbstractDataloader):
     @torch.no_grad()
     def get_random_batch(self):
         if self.cfg['tokenized']:
-            if self.cfg["model_to_interpret"] == 'pythia-70m':
-                rands = torch.randperm(len(self.data))[:self.cfg['model_batch_size']]
-                tokens = self.data[rands]['tokens']
-                tokens = torch.tensor(tokens)[:, :self.cfg['seq_len']]
-            else:
-                rands = torch.randperm(len(self.data))[:self.cfg['model_batch_size']]
-                # print('rands:', rands)
-                # print('self.data:\n',self.data)
-                tokens = self.data[rands]['tokens']
-                tokens = torch.tensor(tokens)[:, :self.cfg['seq_len']]
+            tokens = self.data[torch.randperm(len(self.data))[:self.cfg['model_batch_size']]]['tokens']
+            tokens = torch.tensor(tokens)[:, :self.cfg['seq_len']]
         else:    
             sentences = self.data[torch.randperm(len(self.data))[:self.cfg['model_batch_size']]]
             inputs = self.tokenizer(sentences, max_length=128, truncation=True, padding=True,return_tensors="pt")

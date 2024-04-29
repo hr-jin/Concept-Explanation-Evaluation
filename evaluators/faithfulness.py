@@ -5,14 +5,12 @@ import torch.nn as nn
 from logger import logger
 import numpy as np
 from tqdm import tqdm
-import time
 
 class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
     def __init__(
         self, 
         cfg, 
         activation_func, 
-        hidden_state_func,
         model, 
         concept=None, 
         concept_idx=-1, 
@@ -23,7 +21,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         logits_corr_topk=None,
     ):
         nn.Module.__init__(self)
-        BaseEvaluator.__init__(self, cfg, activation_func, hidden_state_func, model)
+        BaseEvaluator.__init__(self, cfg, activation_func, model)
         self.concept = concept
         self.concept_idx = concept_idx
         self.disturb = disturb
@@ -41,15 +39,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
         self.concept = concept
         self.concept_idx = concept_idx
     
-    def get_metric(
-        self, 
-        eval_tokens, 
-        pre_metrics=None, 
-        pre_concept_acts=None, 
-        return_metric_and_acts=False, 
-        hidden_states_all=None, 
-        **kwargs
-    ):
+    def get_metric(self, eval_tokens, pre_metrics=None, pre_concept_acts=None, return_metric_and_acts=False,**kwargs):
         
         _, maxlen = eval_tokens.shape[0], eval_tokens.shape[1]
         minibatch = self.cfg['concept_eval_batchsize']
@@ -57,21 +47,13 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
             
         metrics = []
         concept_acts = []
-        
         if pre_metrics is None:
             params = self.model.parameters()
             optimizer = torch.optim.Adam(params, lr=0.001)
-            token_idx = 0
-            ae_time_total, np_time_total, c2g_moving_total, acti_diff_moving_total = 0, 0, 0, 0
             for tokens in tqdm(eval_tokens, desc='Traverse the evaluation corpus to calculate metrics'):            
                 
-                T1 = time.time()
-                hidden_states = hidden_states_all[token_idx][0].to(self.cfg['device'])
-                T2 = time.time()
-                concept_act = self.activation_func(tokens, self.model, self.concept, self.concept_idx, hidden_states=hidden_states) # minibatch * maxlen
-                T3 = time.time()
+                concept_act = self.activation_func(tokens, self.model, self.concept, self.concept_idx) # minibatch * maxlen
                 concept_acts.append(concept_act.cpu().reshape(tokens.shape[0], maxlen).numpy())
-                T4 = time.time()
                 
                 if self.disturb == 'gradient':
                     if self.measure_obj == 'logits':
@@ -123,13 +105,7 @@ class FaithfulnessEvaluator(nn.Module, BaseEvaluator):
                                 hook=self.ablation_hook,
                                 concept_act=concept_act,
                             ) # minibatch * maxlen
-                T5 = time.time()
-                c2g_moving_total += T2 - T1
-                ae_time_total += T3 - T2
-                np_time_total += T4 - T3
-                np_time_total += T5 - T4
                 metrics.append(metric)
-                token_idx += 1
             concept_acts = np.concatenate(concept_acts, axis=0)
             metrics = np.concatenate(metrics, axis=0)
         else:

@@ -11,7 +11,6 @@ from logger import logger
 import os
 import time
 
-
 class AutoEncoder(nn.Module, BaseExtractor):
     """
     An unsupervised learning method that hopes to learn sparsely activated concepts through AutoEncoder
@@ -222,24 +221,10 @@ class AutoEncoder(nn.Module, BaseExtractor):
             return l0_norm
         
     @torch.no_grad()
-    def hidden_state_func(self, tokens, model, return_time=False):
-        T1 = time.time()
+    def activation_func(self, tokens, model, concept=None, concept_idx=None):
         _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
         hidden_states = cache[self.cfg["act_name"]]
-        T2 = time.time()
-        if return_time:
-            return hidden_states, T2 - T1
-        return hidden_states
     
-    @torch.no_grad()
-    def activation_func(self, tokens, model, concept=None, concept_idx=None, hidden_states=None, return_time=False):
-        
-        if hidden_states is None:
-            # _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
-            # hidden_states = cache[self.cfg["act_name"]]
-            hidden_states = self.hidden_state_func(self, tokens, model)
-        
-        T2 = time.time()
         
         assert tokens.shape[1] == hidden_states.shape[1]
         
@@ -253,26 +238,4 @@ class AutoEncoder(nn.Module, BaseExtractor):
         else:
             hidden_acts = self.forward(hidden_states)[1]
             results = hidden_acts[:, concept_idx]
-        T3 = time.time()
-        if return_time:
-            return results, T3-T2
         return results
-    
-    
-    # @torch.no_grad()
-    # def activation_func(self, tokens, model, concept=None, concept_idx=None):    
-    #     _, cache = model.run_with_cache(tokens, stop_at_layer=self.cfg["layer"]+1, names_filter=self.cfg["act_name"])
-    #     hidden_states = cache[self.cfg["act_name"]]
-    
-    #     assert tokens.shape[1] == hidden_states.shape[1]
-        
-    #     if self.cfg['site'] == 'mlp_post':
-    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_mlp'])
-    #     else: 
-    #         hidden_states = hidden_states.reshape(-1, self.cfg['d_model'])
-        
-    #     if concept_idx == None:
-    #         results = (hidden_states * concept).sum(-1) / (concept * concept).sum()
-    #     else:
-    #         results = (hidden_states * self.concepts[concept_idx, :]).sum(-1) / (concept * concept).sum()
-    #     return results

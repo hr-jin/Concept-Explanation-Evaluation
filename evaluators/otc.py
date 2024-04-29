@@ -10,14 +10,13 @@ class OutputTopicCoherenceEvaluator(nn.Module, BaseEvaluator):
         self, 
         cfg, 
         activation_func,
-        hidden_state_func,
         model, 
         concept=None, 
         concept_idx=None, 
         pmi_type='uci',
     ):
         nn.Module.__init__(self)
-        BaseEvaluator.__init__(self, cfg, activation_func, hidden_state_func, model)
+        BaseEvaluator.__init__(self, cfg, activation_func, model)
         self.concept = concept
         self.concept_idx = concept_idx
         self.pmi_type = pmi_type

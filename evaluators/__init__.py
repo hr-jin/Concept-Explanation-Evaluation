@@ -8,6 +8,6 @@ EVALUATORS = {
     FaithfulnessEvaluator.code(): FaithfulnessEvaluator,
 }
 
-def evaluator_factory(cfg, activation_func, hidden_state_func, model, **kwargs):
+def evaluator_factory(cfg, activation_func, model, **kwargs):
     evaluator = EVALUATORS[cfg['evaluator']]
-    return evaluator(cfg, activation_func, hidden_state_func, model, **kwargs)
+    return evaluator(cfg, activation_func, model, **kwargs)

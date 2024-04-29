@@ -61,7 +61,6 @@ cfg = {
         "tokenized":False, # Whether the training data has been tokenized
         "data_from_hf":True, # Whether the dataset is downloaded from huggingface
         'dataloader': 'ae',
-        'tcav_dataset':  'DD',
         
         ## Which layer and part of the model should be explained?
         "layer": 0,

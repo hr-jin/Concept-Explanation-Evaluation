@@ -9,26 +9,18 @@ class BaseExtractor(metaclass=ABCMeta):
     def code(cls):
         pass
     
-    @classmethod
-    @abstractmethod
+    @abstractclassmethod
     def activation_func(self, **kwargs):
-        pass
-    
-    @classmethod
-    @abstractmethod
-    def hidden_state_func(self, **kwargs):
         pass
     
     def load_from_file(*args,**kwargs):
         pass
     
-    @classmethod
-    @abstractmethod
+    @abstractclassmethod
     def extract_concepts(self):
         pass
     
-    @classmethod
-    @abstractmethod
+    @abstractclassmethod
     def get_concepts(self):
         pass
 
