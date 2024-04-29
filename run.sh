@@ -35,14 +35,6 @@ dict_mult=8
 model_to_interpret="pythia-70m"
 model_dir="..."
 
-# ## gpt2
-# batch_size=8192
-# buffer_mult=1
-# dict_mult=2
-# model_to_interpret="gpt2-small"
-# model_dir=".../data/gpt2-small"     
-# device_list=''
-
 
 data_dir=".../data/pile/"
 dataset_name="pile" 
