@@ -110,7 +110,7 @@ class ReliabilityConsistencyEvaluator(nn.Module, BaseMetricEvaluator):
                         pre_metrics[name + str(concept_idx)] = tmp_metrics
                         pre_concept_acts[name + str(concept_idx)] = tmp_acts
                     else:
-                        concept_metric = evaluator.get_metric(tokens)
+                        assert 0, name + ' is not supported yet'
                     concept_metric_list.append(concept_metric)
                 tmp_metric_list.append(concept_metric_list)
             metric_list.append(tmp_metric_list)

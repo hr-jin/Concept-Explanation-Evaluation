@@ -46,13 +46,11 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
         print('get token freq...')
         token_freq_dict, freq_threshold = BaseMetricEvaluator.get_token_freq(eval_tokens)
         print('finished getting token freq...')
-        hidden_states_all = []
-        
-        for name, evaluator in evaluator_dict.items():   
-            logger.info('Evaluating {} ...'.format(name))   
-            concept_metric_list = []    
-            
-            if ('itc' in name) and (len(hidden_states_all) == 0):
+        hidden_states_reada = []
+        hidden_states_faith = []
+        for name, evaluator in evaluator_dict.items():     
+             
+            if (len(hidden_states_reada) == 0):
                 _, maxlen = eval_tokens.shape[0], eval_tokens.shape[1]
                 minibatch = self.cfg['concept_eval_batchsize']
                 eval_tokens_tuple = eval_tokens.split(minibatch, dim=0)
@@ -70,11 +68,28 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
                         T4 = time.time()
                         total_movetime += T4 - T3
                     print(len(hidden_states_tmp))
-                    hidden_states_all.append(hidden_states_tmp)
-                print(len(hidden_states_all))
+                    hidden_states_reada.append(hidden_states_tmp)
+                print(len(hidden_states_reada))
                 T2 = time.time()
                 print('\nhidden states calculating cost:%s s' % ((T2-T1)))
                 print('first device moving cost:%s s' % ((total_movetime)))
+                
+            if (len(hidden_states_faith) == 0):
+                _, maxlen = eval_tokens.shape[0], eval_tokens.shape[1]
+                minibatch = self.cfg['concept_eval_batchsize']
+                eval_tokens_tuple = eval_tokens.split(minibatch, dim=0)
+                padding_id = evaluator.model.tokenizer.unk_token_id
+                total_movetime = 0
+                T1 = time.time()
+                for tokens in tqdm(eval_tokens_tuple, desc='model forward: get hidden states'):
+                    hidden_states_tmp = [evaluator.hidden_state_func(tokens, evaluator.model)]
+                    hidden_states_reada.append(hidden_states_tmp)
+                print(len(hidden_states_reada))
+                T2 = time.time()
+                print('\nhidden states calculating cost:%s s' % ((T2-T1)))
+                
+            logger.info('Evaluating {} ...'.format(name))   
+            concept_metric_list = [] 
                     
             for j, concept_idx in enumerate(concept_idxs):
                 concept = concepts[j]
@@ -89,7 +104,7 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
                                                                                         concept_idx,
                                                                                         token_freq_dict,
                                                                                         freq_threshold,
-                                                                                        hidden_states_all)
+                                                                                        hidden_states_reada)
                         topic_tokens[j] = tmp_tokens
                         topic_idxs[j] = tmp_idxs
                         origin_dfs[j] = origin_df
@@ -104,16 +119,16 @@ class ValidityRelevanceEvaluator(nn.Module, BaseMetricEvaluator):
                     rep_str = name.replace('replace-ablation', 'replace') + str(concept_idx)
                     tmp_acts = pre_concept_acts[abl_str]
                     tmp_metrics = pre_metrics[rep_str] + pre_metrics[abl_str] # ablation metrics has been inverted
-                    concept_metric = evaluator.get_metric(eval_tokens, tmp_metrics, tmp_acts)
+                    concept_metric = evaluator.get_metric(eval_tokens, tmp_metrics, tmp_acts, hidden_states_all=hidden_states_all)
                 elif ('replace' in name) or ('ablation' in name):
-                    concept_metric, tmp_metrics, tmp_acts = evaluator.get_metric(eval_tokens, return_metric_and_acts=True)
+                    concept_metric, tmp_metrics, tmp_acts = evaluator.get_metric(eval_tokens, return_metric_and_acts=True, hidden_states_all=hidden_states_all)
                     pre_metrics[name + str(concept_idx)] = tmp_metrics
                     pre_concept_acts[name + str(concept_idx)] = tmp_acts
                 elif 'otc' in name:
                     concept_metric, tmp_preferred_tokens = evaluator.get_metric(eval_tokens, return_tokens=True)
                     most_preferred_tokens[j] = tmp_preferred_tokens
                 else:
-                    concept_metric = evaluator.get_metric(eval_tokens)
+                    assert 0, name + ' is not supported yet'
                 concept_metric_list.append(concept_metric)
             metric_list.append(concept_metric_list)
         metrics = torch.tensor(metric_list) # n_metrics, n_concepts 

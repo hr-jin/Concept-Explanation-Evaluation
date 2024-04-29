@@ -356,22 +356,41 @@ class BaseEvaluator(metaclass=ABCMeta):
 
             padding_id = self.model.tokenizer.unk_token_id
             
-            ae_time_total, np_time_total, device_moving_total = 0, 0, 0
+            ae_time_total, np_time_total, device_moving_total, acti_diff_moving_total = 0, 0, 0, 0
+            acti_diff_list = []
             for padding_position in range(maxlen):
                 tmp_tokens = tokens.clone()
                 tmp_tokens[:,padding_position] = padding_id
-                # if (padding_position == 3):
-                #     print(concept.device)
-                # T1 = time.time()
-                # concept_acts = self.activation_func(tmp_tokens, self.model, concept, concept_idx) # minibatch * maxlen
+                
                 T1 = time.time()
                 hidden_states = hidden_states_all[token_idx][1+padding_position].to(self.cfg['device'])
                 T15 = time.time()
                 concept_acts, ae_time = self.activation_func(tmp_tokens, self.model, concept, concept_idx, return_time=True, hidden_states=hidden_states) # minibatch * maxlen
                 T2 = time.time()
                 acti_diff = origin_acts - concept_acts
+                # if padding_position == 3:
+                #     print('\n',acti_diff.device)
+                #     print('\n',acti_diff.shape)
                 acti_diff = acti_diff.detach().cpu().numpy()
-
+                acti_diff_list.append(acti_diff)
+                T3 = time.time()
+                # if padding_position == 3:
+                #     print(T3-T2)
+                
+                acti_diff_moving_total += T3 - T2
+                device_moving_total += T15 - T1
+                ae_time_total += ae_time
+                
+            print('device moving cost:%s s' % ((device_moving_total)))
+            print('ae calculating cost:%s s' % ((ae_time_total)))
+            print('acti_diff moving cost:%s s' % ((acti_diff_moving_total)))
+            
+            for padding_position in range(maxlen):
+                
+                T2 = time.time()
+                
+                acti_diff = acti_diff_list[padding_position]
+                
                 mask = np.ones((tokens.shape[0], maxlen))
                 mask[:, padding_position] = 0
                 mask = mask.reshape((tokens.shape[0] * maxlen))
@@ -389,13 +408,11 @@ class BaseEvaluator(metaclass=ABCMeta):
                 most_imp_actis = np.where(indices, most_imp_actis , acti_diff)
                 T3 = time.time()
                 
-                device_moving_total += T15 - T1
-                ae_time_total += ae_time
+                
                 np_time_total += T3 - T2
                 
             token_idx += 1
-            print('device moving cost:%s s' % ((device_moving_total)))
-            print('ae calculating cost:%s s' % ((ae_time_total)))
+            
             print('numpy operation cost:%s s' % ((np_time_total)))
                      
             tokens_reshaped = tokens.reshape((-1)).cpu().numpy()

@@ -85,7 +85,7 @@ l1_str=${l1_coeff/./-}
 dict_mult_str=${dict_mult/./-}
 site_str=${site/./-}
 
-log_str="logs/timeCheck_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
+log_str="logs/debug_idxs_"$metric_evaluator"_layer"$layer"_topic"$topic_len"_"$return_type"_seed"$seed"_"$model_to_interpret"_data_"$dataset_name"_extr_"$extractor".log"
 
 echo $log_str
 
